@@ -295,4 +295,4 @@ The primary ParaView-compatible workflow should remain:
 
 ## License
 
-To be decided.
+MIT.
