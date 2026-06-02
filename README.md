@@ -103,18 +103,17 @@ x1 y1 z1 x2 y2 z2 x3 y3 z3
 
 ## Planned Versions
 
-### Version 0.1 — Single-frame explicit conversion
+### Version 0.1 — Single-frame conversion
 
-Convert explicitly provided files into one VTK multiblock scene.
+Convert time frames into VTK multiblock scenes. You can either pass explicit paths or use auto-discovery with `--id` and `--input`. Auto-discovery includes all surface `.raw` files for the frame, and each `.raw` can contain multiple labeled sections. Output is written as per-frame folders plus a `.pvd` time-series file.
 
 Example:
 
 ```bash
 xcat2vtk \
-  --activity 260602_act_1.bin \
-  --attenuation 260602_atn_1.bin \
-  --surface 260602_1_head.raw \
-  --output scene.vtm \
+  --id 260602 \
+  --input ./data \
+  --output ./outputs \
   --dims 750 750 750 \
   --spacing 1.0 1.0 1.0 \
   --origin 0.0 0.0 0.0
@@ -206,6 +205,7 @@ cmake --build . -j
 ```bash
 ./xcat2vtk --help
 ```
+
 
 Example:
 
