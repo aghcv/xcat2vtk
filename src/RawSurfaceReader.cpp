@@ -1,5 +1,6 @@
 #include "RawSurfaceReader.h"
 
+#include <array>
 #include <cstdlib>
 #include <fstream>
 #include <string>
@@ -37,13 +38,41 @@ vtkSmartPointer<vtkPolyData> BuildPolyData(const std::vector<float> &values) {
   polyData->SetPolys(polys);
   return polyData;
 }
+
+void ApplyTransform(vtkSmartPointer<vtkPolyData> polyData,
+                    const std::array<double, 3> &scale,
+                    const std::array<double, 3> &translate) {
+  if (!polyData) {
+    return;
+  }
+  if (scale[0] == 1.0 && scale[1] == 1.0 && scale[2] == 1.0 &&
+      translate[0] == 0.0 && translate[1] == 0.0 && translate[2] == 0.0) {
+    return;
+  }
+  vtkPoints *points = polyData->GetPoints();
+  if (!points) {
+    return;
+  }
+  const vtkIdType count = points->GetNumberOfPoints();
+  double p[3];
+  for (vtkIdType i = 0; i < count; ++i) {
+    points->GetPoint(i, p);
+    p[0] = p[0] * scale[0] + translate[0];
+    p[1] = p[1] * scale[1] + translate[1];
+    p[2] = p[2] * scale[2] + translate[2];
+    points->SetPoint(i, p);
+  }
+  points->Modified();
+}
 } // namespace
 
 bool RawSurfaceReader::ReadAll(
-  const std::string &path,
-  const std::string &groupLabel,
-  std::vector<SurfaceData> &surfaces,
-  std::string &error) {
+    const std::string &path,
+    const std::string &groupLabel,
+    const std::array<double, 3> &scale,
+    const std::array<double, 3> &translate,
+    std::vector<SurfaceData> &surfaces,
+    std::string &error) {
   std::ifstream file(path);
   if (!file.is_open()) {
     error = "Cannot open surface file: " + path;
@@ -69,6 +98,7 @@ bool RawSurfaceReader::ReadAll(
     surface.group = groupLabel;
     surface.label = currentLabel.empty() ? fallbackLabel : currentLabel;
     surface.data = BuildPolyData(currentValues);
+    ApplyTransform(surface.data, scale, translate);
     surfaces.push_back(surface);
     currentValues.clear();
     return true;

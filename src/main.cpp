@@ -31,6 +31,8 @@ struct Options {
   std::array<int, 3> dims{0, 0, 0};
   std::array<double, 3> spacing{1.0, 1.0, 1.0};
   std::array<double, 3> origin{0.0, 0.0, 0.0};
+  std::array<double, 3> surfaceScale{1.0, 1.0, 1.0};
+  std::array<double, 3> surfaceTranslate{0.0, 0.0, 0.0};
   bool dimsProvided = false;
   bool showHelp = false;
 };
@@ -52,6 +54,8 @@ void PrintHelp() {
       << "  --dims NX NY NZ           Required if a volume is provided\n"
       << "  --spacing DX DY DZ        Optional (default: 1 1 1)\n"
       << "  --origin OX OY OZ          Optional (default: 0 0 0)\n"
+      << "  --surface-scale SX SY SZ   Optional (default: 1 1 1)\n"
+      << "  --surface-translate TX TY TZ  Optional (default: 0 0 0)\n"
       << "  --help                    Show this message\n";
 }
 
@@ -169,6 +173,14 @@ bool ParseArgs(int argc, char **argv, Options &options, std::string &error) {
       if (!ParseTriplet(argc, argv, i, options.origin, "--origin", error)) {
         return false;
       }
+    } else if (arg == "--surface-scale") {
+      if (!ParseTriplet(argc, argv, i, options.surfaceScale, "--surface-scale", error)) {
+        return false;
+      }
+    } else if (arg == "--surface-translate") {
+      if (!ParseTriplet(argc, argv, i, options.surfaceTranslate, "--surface-translate", error)) {
+        return false;
+      }
     } else {
       error = "Unknown argument: " + arg;
       return false;
@@ -260,10 +272,12 @@ bool ResolveAutoInputs(const Options &options,
 
 bool AppendSurfaces(const std::string &path,
                     const std::string &groupLabel,
+                    const std::array<double, 3> &scale,
+                    const std::array<double, 3> &translate,
                     std::vector<SurfaceData> &surfaces,
                     std::string &error) {
   std::vector<SurfaceData> local;
-  if (!RawSurfaceReader::ReadAll(path, groupLabel, local, error)) {
+  if (!RawSurfaceReader::ReadAll(path, groupLabel, scale, translate, local, error)) {
     return false;
   }
   surfaces.insert(surfaces.end(), local.begin(), local.end());
@@ -405,7 +419,12 @@ int main(int argc, char **argv) {
     }
 
     for (const auto &surfaceFile : inputs.surfaceFiles) {
-      if (!AppendSurfaces(surfaceFile.first, surfaceFile.second, surfaces, error)) {
+      if (!AppendSurfaces(surfaceFile.first,
+                          surfaceFile.second,
+                          options.surfaceScale,
+                          options.surfaceTranslate,
+                          surfaces,
+                          error)) {
         std::cerr << "Error: " << error << "\n";
         return 1;
       }

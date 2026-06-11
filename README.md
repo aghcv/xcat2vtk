@@ -270,6 +270,15 @@ The converter should create:
 - `vtkPolyData`
 - `.vtp` output
 
+### Surface Alignment
+
+Surface `.raw` files can be in a different coordinate system than the voxel volumes. Use these optional flags to align surfaces with the volume space:
+
+- `--surface-scale SX SY SZ`
+- `--surface-translate TX TY TZ`
+
+If your surfaces are in voxel index space, set `--surface-scale` to match `--spacing` and `--surface-translate` to match `--origin`.
+
 ## Long-Term Direction
 
 This repository may later support additional output formats:
