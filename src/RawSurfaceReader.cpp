@@ -1,5 +1,6 @@
 #include "RawSurfaceReader.h"
 
+#include <algorithm>
 #include <array>
 #include <cstdlib>
 #include <fstream>
@@ -19,6 +20,28 @@ bool TryParseFloat(const std::string &token, float &value) {
     return false;
   }
   return true;
+}
+
+void IncludePoint(SurfaceBounds &bounds,
+                  const std::array<double, 3> &scale,
+                  const std::array<double, 3> &translate,
+                  const std::array<float, 3> &point) {
+  const std::array<double, 3> transformed{
+      static_cast<double>(point[0]) * scale[0] + translate[0],
+      static_cast<double>(point[1]) * scale[1] + translate[1],
+      static_cast<double>(point[2]) * scale[2] + translate[2]};
+
+  if (!bounds.valid) {
+    bounds.valid = true;
+    bounds.min = transformed;
+    bounds.max = transformed;
+    return;
+  }
+
+  for (int axis = 0; axis < 3; ++axis) {
+    bounds.min[axis] = std::min(bounds.min[axis], transformed[axis]);
+    bounds.max[axis] = std::max(bounds.max[axis], transformed[axis]);
+  }
 }
 
 vtkSmartPointer<vtkPolyData> BuildPolyData(const std::vector<float> &values) {
@@ -65,6 +88,74 @@ void ApplyTransform(vtkSmartPointer<vtkPolyData> polyData,
   points->Modified();
 }
 } // namespace
+
+bool RawSurfaceReader::ScanAll(
+    const std::string &path,
+    const std::string &groupLabel,
+    const std::array<double, 3> &scale,
+    const std::array<double, 3> &translate,
+    SurfaceScanResult &result,
+    std::string &error) {
+  std::ifstream file(path);
+  if (!file.is_open()) {
+    error = "Cannot open surface file: " + path;
+    return false;
+  }
+
+  const std::string fallbackLabel = groupLabel.empty() ? "surface" : groupLabel;
+  std::string currentLabel = fallbackLabel;
+  size_t currentValueCount = 0;
+  size_t axis = 0;
+  std::array<float, 3> point{0.0f, 0.0f, 0.0f};
+  std::string token;
+  bool sawNumeric = false;
+
+  auto flushSurface = [&]() -> bool {
+    if (currentValueCount == 0) {
+      return true;
+    }
+    if (currentValueCount % 9 != 0) {
+      error = "Surface data does not contain a multiple of 9 numeric values: " +
+              currentLabel + " in " + path;
+      return false;
+    }
+    result.labels.push_back({groupLabel, currentLabel.empty() ? fallbackLabel : currentLabel});
+    currentValueCount = 0;
+    axis = 0;
+    return true;
+  };
+
+  while (file >> token) {
+    float value = 0.0f;
+    if (TryParseFloat(token, value)) {
+      point[axis] = value;
+      ++axis;
+      ++currentValueCount;
+      sawNumeric = true;
+      if (axis == 3) {
+        IncludePoint(result.bounds, scale, translate, point);
+        axis = 0;
+      }
+      continue;
+    }
+
+    if (!flushSurface()) {
+      return false;
+    }
+    currentLabel = token;
+  }
+
+  if (!flushSurface()) {
+    return false;
+  }
+
+  if (!sawNumeric) {
+    error = "Surface file does not contain any numeric data: " + path;
+    return false;
+  }
+
+  return true;
+}
 
 bool RawSurfaceReader::ReadAll(
     const std::string &path,

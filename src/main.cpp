@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <array>
+#include <cctype>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -33,7 +34,14 @@ struct Options {
   std::array<double, 3> origin{0.0, 0.0, 0.0};
   std::array<double, 3> surfaceScale{1.0, 1.0, 1.0};
   std::array<double, 3> surfaceTranslate{0.0, 0.0, 0.0};
+  double volumeBackgroundValue = 0.0;
+  double volumeBackgroundEpsilon = 0.0;
+  std::string volumeFitSource = "auto";
   bool dimsProvided = false;
+  bool spacingProvided = false;
+  bool originProvided = false;
+  bool stableSurfaceOrder = true;
+  bool fitVolumeToSurfaces = true;
   bool showHelp = false;
 };
 
@@ -56,6 +64,11 @@ void PrintHelp() {
       << "  --origin OX OY OZ          Optional (default: 0 0 0)\n"
       << "  --surface-scale SX SY SZ   Optional (default: 1 1 1)\n"
       << "  --surface-translate TX TY TZ  Optional (default: 0 0 0)\n"
+      << "  --no-stable-surface-order  Disable default global alphabetical surface block order\n"
+      << "  --no-fit-volume-to-surfaces  Disable default volume fit to surface bounds\n"
+      << "  --volume-background VALUE  Background value for occupied-voxel fitting (default: 0)\n"
+      << "  --volume-background-epsilon EPS  Occupied-voxel tolerance (default: 0)\n"
+      << "  --volume-fit-source <auto|attenuation|activity|union>\n"
       << "  --help                    Show this message\n";
 }
 
@@ -169,16 +182,65 @@ bool ParseArgs(int argc, char **argv, Options &options, std::string &error) {
       if (!ParseTriplet(argc, argv, i, options.spacing, "--spacing", error)) {
         return false;
       }
+      options.spacingProvided = true;
     } else if (arg == "--origin") {
       if (!ParseTriplet(argc, argv, i, options.origin, "--origin", error)) {
         return false;
       }
+      options.originProvided = true;
     } else if (arg == "--surface-scale") {
       if (!ParseTriplet(argc, argv, i, options.surfaceScale, "--surface-scale", error)) {
         return false;
       }
     } else if (arg == "--surface-translate") {
       if (!ParseTriplet(argc, argv, i, options.surfaceTranslate, "--surface-translate", error)) {
+        return false;
+      }
+    } else if (arg == "--stable-surface-order") {
+      options.stableSurfaceOrder = true;
+    } else if (arg == "--no-stable-surface-order") {
+      options.stableSurfaceOrder = false;
+    } else if (arg == "--fit-volume-to-surfaces") {
+      options.fitVolumeToSurfaces = true;
+    } else if (arg == "--no-fit-volume-to-surfaces") {
+      options.fitVolumeToSurfaces = false;
+    } else if (arg == "--volume-background") {
+      if (i + 1 >= argc) {
+        error = "Missing value for --volume-background";
+        return false;
+      }
+      try {
+        options.volumeBackgroundValue = std::stod(argv[++i]);
+      } catch (const std::exception &) {
+        error = "Invalid number for --volume-background";
+        return false;
+      }
+    } else if (arg == "--volume-background-epsilon") {
+      if (i + 1 >= argc) {
+        error = "Missing value for --volume-background-epsilon";
+        return false;
+      }
+      try {
+        options.volumeBackgroundEpsilon = std::stod(argv[++i]);
+      } catch (const std::exception &) {
+        error = "Invalid number for --volume-background-epsilon";
+        return false;
+      }
+      if (options.volumeBackgroundEpsilon < 0.0) {
+        error = "--volume-background-epsilon must be non-negative";
+        return false;
+      }
+    } else if (arg == "--volume-fit-source") {
+      if (i + 1 >= argc) {
+        error = "Missing value for --volume-fit-source";
+        return false;
+      }
+      options.volumeFitSource = argv[++i];
+      if (options.volumeFitSource != "auto" &&
+          options.volumeFitSource != "attenuation" &&
+          options.volumeFitSource != "activity" &&
+          options.volumeFitSource != "union") {
+        error = "Invalid --volume-fit-source; expected auto, attenuation, activity, or union";
         return false;
       }
     } else {
@@ -284,6 +346,341 @@ bool AppendSurfaces(const std::string &path,
   return true;
 }
 
+std::string LowerAscii(std::string value) {
+  std::transform(value.begin(), value.end(), value.begin(), [](unsigned char ch) {
+    return static_cast<char>(std::tolower(ch));
+  });
+  return value;
+}
+
+bool LabelLess(const std::string &left, const std::string &right) {
+  const std::string leftLower = LowerAscii(left);
+  const std::string rightLower = LowerAscii(right);
+  if (leftLower == rightLower) {
+    return left < right;
+  }
+  return leftLower < rightLower;
+}
+
+std::string SurfaceBaseLabel(const std::string &label) {
+  return label.empty() ? "surface" : label;
+}
+
+std::vector<std::string> NormalizeSurfaceLabels(const std::vector<SurfaceLabel> &labels) {
+  std::map<std::string, int> labelCounts;
+  std::vector<std::string> normalized;
+  normalized.reserve(labels.size());
+  for (const auto &surface : labels) {
+    const std::string baseLabel = SurfaceBaseLabel(surface.label);
+    const int count = ++labelCounts[baseLabel];
+    normalized.push_back(count == 1 ? baseLabel : baseLabel + "_" + std::to_string(count));
+  }
+  return normalized;
+}
+
+void NormalizeSurfaceDataLabels(std::vector<SurfaceData> &surfaces) {
+  std::map<std::string, int> labelCounts;
+  for (auto &surface : surfaces) {
+    const std::string baseLabel = SurfaceBaseLabel(surface.label);
+    const int count = ++labelCounts[baseLabel];
+    surface.label = count == 1 ? baseLabel : baseLabel + "_" + std::to_string(count);
+  }
+}
+
+void IncludeBounds(SurfaceBounds &target, const SurfaceBounds &source) {
+  if (!source.valid) {
+    return;
+  }
+  if (!target.valid) {
+    target = source;
+    return;
+  }
+  for (int axis = 0; axis < 3; ++axis) {
+    target.min[axis] = std::min(target.min[axis], source.min[axis]);
+    target.max[axis] = std::max(target.max[axis], source.max[axis]);
+  }
+}
+
+bool HasVolumeInputs(const std::map<int, FrameInputs> &frames,
+                     const std::vector<int> &framesToProcess) {
+  for (const int frame : framesToProcess) {
+    const auto found = frames.find(frame);
+    if (found == frames.end()) {
+      continue;
+    }
+    if (!found->second.activityPath.empty() || !found->second.attenuationPath.empty()) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool HasSurfaceInputs(const std::map<int, FrameInputs> &frames,
+                      const std::vector<int> &framesToProcess) {
+  for (const int frame : framesToProcess) {
+    const auto found = frames.find(frame);
+    if (found == frames.end()) {
+      continue;
+    }
+    if (!found->second.surfaceFiles.empty()) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool HasActivityInputs(const std::map<int, FrameInputs> &frames,
+                       const std::vector<int> &framesToProcess) {
+  for (const int frame : framesToProcess) {
+    const auto found = frames.find(frame);
+    if (found != frames.end() && !found->second.activityPath.empty()) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool HasAttenuationInputs(const std::map<int, FrameInputs> &frames,
+                          const std::vector<int> &framesToProcess) {
+  for (const int frame : framesToProcess) {
+    const auto found = frames.find(frame);
+    if (found != frames.end() && !found->second.attenuationPath.empty()) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void SortSurfaceFiles(std::map<int, FrameInputs> &frames) {
+  for (auto &entry : frames) {
+    std::sort(entry.second.surfaceFiles.begin(),
+              entry.second.surfaceFiles.end(),
+              [](const auto &left, const auto &right) {
+                if (LabelLess(left.second, right.second)) {
+                  return true;
+                }
+                if (LabelLess(right.second, left.second)) {
+                  return false;
+                }
+                return left.first < right.first;
+              });
+  }
+}
+
+bool ScanSurfacesForFrame(const FrameInputs &inputs,
+                          const Options &options,
+                          std::vector<std::string> &frameLabels,
+                          SurfaceBounds &globalBounds,
+                          std::string &error) {
+  std::vector<SurfaceLabel> labels;
+  for (const auto &surfaceFile : inputs.surfaceFiles) {
+    SurfaceScanResult scan;
+    if (!RawSurfaceReader::ScanAll(surfaceFile.first,
+                                   surfaceFile.second,
+                                   options.surfaceScale,
+                                   options.surfaceTranslate,
+                                   scan,
+                                   error)) {
+      return false;
+    }
+    labels.insert(labels.end(), scan.labels.begin(), scan.labels.end());
+    IncludeBounds(globalBounds, scan.bounds);
+  }
+  frameLabels = NormalizeSurfaceLabels(labels);
+  return true;
+}
+
+void IncludeVolumeBounds(VolumeIndexBounds &target, const VolumeIndexBounds &source) {
+  if (!source.valid) {
+    return;
+  }
+  if (!target.valid) {
+    target = source;
+    return;
+  }
+  for (int axis = 0; axis < 3; ++axis) {
+    target.min[axis] = std::min(target.min[axis], source.min[axis]);
+    target.max[axis] = std::max(target.max[axis], source.max[axis]);
+  }
+}
+
+bool CollectVolumeFitPaths(const std::map<int, FrameInputs> &frames,
+                           const std::vector<int> &framesToProcess,
+                           const Options &options,
+                           std::vector<std::string> &paths,
+                           std::string &error) {
+  const bool hasActivity = HasActivityInputs(frames, framesToProcess);
+  const bool hasAttenuation = HasAttenuationInputs(frames, framesToProcess);
+  std::string source = options.volumeFitSource;
+  if (source == "auto") {
+    source = hasAttenuation ? "attenuation" : "activity";
+  }
+
+  if (source == "attenuation" && !hasAttenuation) {
+    error = "No attenuation files available for --volume-fit-source attenuation.";
+    return false;
+  }
+  if (source == "activity" && !hasActivity) {
+    error = "No activity files available for --volume-fit-source activity.";
+    return false;
+  }
+  if (source == "union" && !hasActivity && !hasAttenuation) {
+    error = "No volume files available for --volume-fit-source union.";
+    return false;
+  }
+
+  for (const int frame : framesToProcess) {
+    const auto found = frames.find(frame);
+    if (found == frames.end()) {
+      continue;
+    }
+    const FrameInputs &inputs = found->second;
+    if ((source == "activity" || source == "union") && !inputs.activityPath.empty()) {
+      paths.push_back(inputs.activityPath);
+    }
+    if ((source == "attenuation" || source == "union") && !inputs.attenuationPath.empty()) {
+      paths.push_back(inputs.attenuationPath);
+    }
+  }
+
+  return true;
+}
+
+bool ScanVolumeBoundsForFit(const std::map<int, FrameInputs> &frames,
+                            const std::vector<int> &framesToProcess,
+                            const Options &options,
+                            VolumeIndexBounds &globalBounds,
+                            std::string &error) {
+  std::vector<std::string> paths;
+  if (!CollectVolumeFitPaths(frames, framesToProcess, options, paths, error)) {
+    return false;
+  }
+
+  for (const auto &path : paths) {
+    VolumeIndexBounds fileBounds;
+    if (!BinVolumeReader::ScanNonBackgroundBounds(path,
+                                                  options.dims,
+                                                  options.volumeBackgroundValue,
+                                                  options.volumeBackgroundEpsilon,
+                                                  fileBounds,
+                                                  error)) {
+      return false;
+    }
+    IncludeVolumeBounds(globalBounds, fileBounds);
+  }
+
+  return true;
+}
+
+SurfaceData MakeEmptySurface(const std::string &label) {
+  SurfaceData surface;
+  surface.label = label;
+  surface.data = vtkSmartPointer<vtkPolyData>::New();
+  return surface;
+}
+
+std::vector<SurfaceData> OrderSurfacesForFrame(std::vector<SurfaceData> surfaces,
+                                               const std::vector<std::string> &globalOrder) {
+  NormalizeSurfaceDataLabels(surfaces);
+  if (globalOrder.empty()) {
+    std::sort(surfaces.begin(), surfaces.end(), [](const auto &left, const auto &right) {
+      return LabelLess(left.label, right.label);
+    });
+    return surfaces;
+  }
+
+  std::map<std::string, SurfaceData> surfacesByLabel;
+  for (const auto &surface : surfaces) {
+    surfacesByLabel[surface.label] = surface;
+  }
+
+  std::vector<SurfaceData> ordered;
+  ordered.reserve(globalOrder.size() + surfacesByLabel.size());
+  for (const auto &label : globalOrder) {
+    const auto found = surfacesByLabel.find(label);
+    if (found == surfacesByLabel.end()) {
+      ordered.push_back(MakeEmptySurface(label));
+      continue;
+    }
+    ordered.push_back(found->second);
+    surfacesByLabel.erase(found);
+  }
+
+  for (const auto &extra : surfacesByLabel) {
+    ordered.push_back(extra.second);
+  }
+  return ordered;
+}
+
+bool ValidateVolumeDimensions(const Options &options, std::string &error) {
+  if (!options.dimsProvided) {
+    error = "Missing --dims for volume input.";
+    return false;
+  }
+  for (const int dim : options.dims) {
+    if (dim <= 0) {
+      error = "Volume dimensions must be positive.";
+      return false;
+    }
+  }
+  return true;
+}
+
+bool FitVolumeToSurfaceBounds(const Options &options,
+                              const SurfaceBounds &bounds,
+                              const VolumeIndexBounds &volumeBounds,
+                              std::array<double, 3> &spacing,
+                              std::array<double, 3> &origin,
+                              std::string &error) {
+  if (!options.fitVolumeToSurfaces || !bounds.valid) {
+    return true;
+  }
+
+  if (!volumeBounds.valid) {
+    if (!options.originProvided) {
+      origin = bounds.min;
+    }
+    if (!options.spacingProvided) {
+      for (int axis = 0; axis < 3; ++axis) {
+        const double extent = bounds.max[axis] - bounds.min[axis];
+        if (extent <= 0.0) {
+          error = "Cannot fit volume to degenerate surface bounds.";
+          return false;
+        }
+        spacing[axis] = extent / static_cast<double>(options.dims[axis]);
+      }
+    }
+    return true;
+  }
+
+  std::array<double, 3> fittedSpacing = spacing;
+  if (!options.spacingProvided) {
+    for (int axis = 0; axis < 3; ++axis) {
+      const double extent = bounds.max[axis] - bounds.min[axis];
+      const int occupiedCells = volumeBounds.max[axis] - volumeBounds.min[axis] + 1;
+      if (extent <= 0.0) {
+        error = "Cannot fit volume to degenerate surface bounds.";
+        return false;
+      }
+      if (occupiedCells <= 0) {
+        error = "Cannot fit volume to invalid occupied voxel bounds.";
+        return false;
+      }
+      fittedSpacing[axis] = extent / static_cast<double>(occupiedCells);
+    }
+  }
+
+  spacing = fittedSpacing;
+  if (!options.originProvided) {
+    for (int axis = 0; axis < 3; ++axis) {
+      origin[axis] = bounds.min[axis] -
+                     static_cast<double>(volumeBounds.min[axis]) * spacing[axis];
+    }
+  }
+
+  return true;
+}
+
 std::string PadFrame(int frame) {
   std::string value = std::to_string(frame);
   if (value.size() >= 3) {
@@ -346,12 +743,6 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  const bool hasVolume = !options.activityPath.empty() || !options.attenuationPath.empty();
-  if (hasVolume && !options.dimsProvided) {
-    std::cerr << "Error: Missing --dims for volume input.\n";
-    return 1;
-  }
-
   std::vector<int> framesToProcess;
   std::map<int, FrameInputs> frames;
 
@@ -379,6 +770,66 @@ int main(int argc, char **argv) {
     framesToProcess = {0};
   }
 
+  SortSurfaceFiles(frames);
+
+  const bool hasVolume = HasVolumeInputs(frames, framesToProcess);
+  if (hasVolume && !ValidateVolumeDimensions(options, error)) {
+    std::cerr << "Error: " << error << "\n";
+    return 1;
+  }
+
+  std::vector<std::string> globalSurfaceOrder;
+  SurfaceBounds globalSurfaceBounds;
+  const bool needsSurfaceBoundsForVolume =
+      hasVolume && options.fitVolumeToSurfaces &&
+      (!options.spacingProvided || !options.originProvided);
+  if (HasSurfaceInputs(frames, framesToProcess) &&
+      (options.stableSurfaceOrder || needsSurfaceBoundsForVolume)) {
+    std::vector<std::string> allLabels;
+    for (const int frame : framesToProcess) {
+      std::vector<std::string> frameLabels;
+      if (!ScanSurfacesForFrame(frames[frame],
+                                options,
+                                frameLabels,
+                                globalSurfaceBounds,
+                                error)) {
+        std::cerr << "Error: " << error << "\n";
+        return 1;
+      }
+      allLabels.insert(allLabels.end(), frameLabels.begin(), frameLabels.end());
+    }
+    std::sort(allLabels.begin(), allLabels.end(), LabelLess);
+    allLabels.erase(std::unique(allLabels.begin(), allLabels.end()), allLabels.end());
+    globalSurfaceOrder = allLabels;
+  }
+
+  std::array<double, 3> volumeSpacing = options.spacing;
+  std::array<double, 3> volumeOrigin = options.origin;
+  VolumeIndexBounds globalVolumeBounds;
+  if (needsSurfaceBoundsForVolume && globalSurfaceBounds.valid) {
+    if (!ScanVolumeBoundsForFit(frames,
+                                framesToProcess,
+                                options,
+                                globalVolumeBounds,
+                                error)) {
+      std::cerr << "Error: " << error << "\n";
+      return 1;
+    }
+    if (!globalVolumeBounds.valid) {
+      std::cerr << "Warning: no non-background voxels found; fitting the full volume grid "
+                   "to surface bounds.\n";
+    }
+  }
+  if (hasVolume && !FitVolumeToSurfaceBounds(options,
+                                             globalSurfaceBounds,
+                                             globalVolumeBounds,
+                                             volumeSpacing,
+                                             volumeOrigin,
+                                             error)) {
+    std::cerr << "Error: " << error << "\n";
+    return 1;
+  }
+
   std::filesystem::path baseOutput(options.outputDir);
   if (!options.id.empty()) {
     baseOutput /= options.id;
@@ -394,8 +845,8 @@ int main(int argc, char **argv) {
       activity = BinVolumeReader::Read(
           inputs.activityPath,
           options.dims,
-          options.spacing,
-          options.origin,
+          volumeSpacing,
+          volumeOrigin,
           "activity",
           error);
       if (!activity) {
@@ -408,8 +859,8 @@ int main(int argc, char **argv) {
       attenuation = BinVolumeReader::Read(
           inputs.attenuationPath,
           options.dims,
-          options.spacing,
-          options.origin,
+          volumeSpacing,
+          volumeOrigin,
           "attenuation",
           error);
       if (!attenuation) {
@@ -428,6 +879,10 @@ int main(int argc, char **argv) {
         std::cerr << "Error: " << error << "\n";
         return 1;
       }
+    }
+
+    if (options.stableSurfaceOrder) {
+      surfaces = OrderSurfacesForFrame(surfaces, globalSurfaceOrder);
     }
 
     const std::filesystem::path frameDir = baseOutput / ("time_" + PadFrame(frame));

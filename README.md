@@ -218,6 +218,17 @@ Example:
   --spacing 1.0 1.0 1.0
 ```
 
+By default, surface blocks are stabilized across all discovered time frames before
+the `.vtm` and `.pvd` files are written:
+
+- all surface labels are scanned first
+- labels are sorted alphabetically
+- every time frame uses the same surface block order
+- labels missing from a time frame are kept as named empty blocks
+
+This keeps ParaView rendering order consistent across animation frames. Use
+`--no-stable-surface-order` to disable this behavior.
+
 ## Development Philosophy
 
 This project should develop incrementally.
@@ -252,6 +263,28 @@ Little-endian byte order: checked
 ```
 
 The same assumptions are used for the initial `.vti` conversion.
+
+The converter writes volume samples as VTK cell data because the input array
+represents voxel values. For `--dims 750 750 750`, the written image extent has
+751 grid points along each axis and 750 voxel cells.
+
+If surfaces are present and `--spacing` or `--origin` are not supplied, the
+converter scans the volume data for non-background voxel cells and fits that
+occupied voxel bounding box to the global transformed surface bounds. This keeps
+zero/background margins outside the anatomical surface extent while aligning the
+actual voxelized domain with the XCAT surface meshes.
+
+The default background value is `0`, with exact comparison. You can adjust this
+when needed:
+
+- `--volume-background VALUE`
+- `--volume-background-epsilon EPS`
+- `--volume-fit-source auto|attenuation|activity|union`
+
+`auto` uses attenuation files when available, because attenuation usually
+represents the full body support, and falls back to activity files otherwise.
+Explicit `--spacing` and `--origin` values always take priority. Use
+`--no-fit-volume-to-surfaces` to keep the old default index-space placement.
 
 ## Notes on XCAT Surface Files
 
