@@ -338,3 +338,30 @@ The primary ParaView-compatible workflow should remain:
 ## License
 
 MIT.
+
+
+
+## voxel sizing 
+
+## Fine
+| Phantom      | Voxel size |    X |    Y |    Z |
+| ------------ | ---------: | ---: | ---: | ---: |
+| Infant       |   0.020 cm | 1108 | 1108 | 2600 |
+| 1 year       |   0.025 cm | 1313 | 1313 | 3080 |
+| 5 years      |   0.030 cm | 1563 | 1563 | 3667 |
+| 10 years     |   0.040 cm | 1481 | 1481 | 3475 |
+| 15 years     |   0.045 cm | 1525 | 1525 | 3578 |
+| Adult female |   0.050 cm | 1380 | 1380 | 3240 |
+| Adult male   |   0.050 cm | 1500 | 1500 | 3520 |
+
+## medium
+| Phantom      | Height | Updated cubic voxel size | X voxels | Y voxels | Z slices |
+| ------------ | -----: | -----------------------: | -------: | -------: | -------: |
+| Infant       |  52 cm |       0.040 cm = 0.40 mm |      554 |      554 |     1300 |
+| 1 year       |  77 cm |       0.050 cm = 0.50 mm |      657 |      657 |     1540 |
+| 5 years      | 110 cm |       0.060 cm = 0.60 mm |      782 |      782 |     1834 |
+| 10 years     | 139 cm |       0.080 cm = 0.80 mm |      741 |      741 |     1738 |
+| 15 years     | 161 cm |       0.090 cm = 0.90 mm |      763 |      763 |     1789 |
+| Adult female | 162 cm |       0.100 cm = 1.00 mm |      690 |      690 |     1620 |
+| Adult male   | 176 cm |       0.100 cm = 1.00 mm |      750 |      750 |     1760 |
+17
