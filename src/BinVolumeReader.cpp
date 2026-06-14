@@ -5,6 +5,7 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <set>
 #include <vector>
 
 #include <vtkCellData.h>
@@ -37,6 +38,124 @@ bool ValidateFileSize(const std::string &path,
 
 bool IsBackground(float value, double backgroundValue, double epsilon) {
   return std::abs(static_cast<double>(value) - backgroundValue) <= epsilon;
+}
+
+bool ValidateBlock(const std::array<int, 3> &sourceDims,
+                   const std::array<int, 3> &blockStart,
+                   const std::array<int, 3> &blockDims,
+                   std::string &error) {
+  for (int axis = 0; axis < 3; ++axis) {
+    if (sourceDims[axis] <= 0) {
+      error = "Source volume dimensions must be positive.";
+      return false;
+    }
+    if (blockDims[axis] <= 0) {
+      error = "Sample block dimensions must be positive.";
+      return false;
+    }
+    if (blockStart[axis] < 0) {
+      error = "Sample block start index is outside the source volume.";
+      return false;
+    }
+    if (blockStart[axis] > sourceDims[axis] - blockDims[axis]) {
+      error = "Sample block extends outside the source volume.";
+      return false;
+    }
+  }
+  return true;
+}
+
+bool ReadBlockValues(const std::string &path,
+                     const std::array<int, 3> &sourceDims,
+                     const std::array<int, 3> &blockStart,
+                     const std::array<int, 3> &blockDims,
+                     std::vector<float> &values,
+                     std::string &error) {
+  if (!ValidateBlock(sourceDims, blockStart, blockDims, error)) {
+    return false;
+  }
+
+  std::ifstream file(path, std::ios::binary);
+  if (!file.is_open()) {
+    error = "Cannot open volume file: " + path;
+    return false;
+  }
+
+  size_t sourceVoxelCount = 0;
+  size_t expectedBytes = 0;
+  if (!ValidateFileSize(path, sourceDims, sourceVoxelCount, expectedBytes, error)) {
+    return false;
+  }
+  (void)sourceVoxelCount;
+  (void)expectedBytes;
+
+  const size_t blockVoxelCount = static_cast<size_t>(blockDims[0]) *
+                                 static_cast<size_t>(blockDims[1]) *
+                                 static_cast<size_t>(blockDims[2]);
+  values.assign(blockVoxelCount, 0.0f);
+
+  const size_t rowValues = static_cast<size_t>(blockDims[0]);
+  const size_t rowBytes = rowValues * sizeof(float);
+  size_t destinationIndex = 0;
+  for (int z = 0; z < blockDims[2]; ++z) {
+    for (int y = 0; y < blockDims[1]; ++y) {
+      const size_t sourceIndex =
+          static_cast<size_t>(blockStart[0]) +
+          static_cast<size_t>(sourceDims[0]) *
+              (static_cast<size_t>(blockStart[1] + y) +
+               static_cast<size_t>(sourceDims[1]) *
+                   static_cast<size_t>(blockStart[2] + z));
+      const std::streamoff offset =
+          static_cast<std::streamoff>(sourceIndex * sizeof(float));
+      file.seekg(offset, std::ios::beg);
+      if (!file) {
+        error = "Failed to seek volume file: " + path;
+        return false;
+      }
+      file.read(reinterpret_cast<char *>(values.data() + destinationIndex), rowBytes);
+      if (!file) {
+        error = "Failed to read volume block from file: " + path;
+        return false;
+      }
+      destinationIndex += rowValues;
+    }
+  }
+
+  return true;
+}
+
+void ComputeStats(const std::vector<float> &values,
+                  double backgroundValue,
+                  double epsilon,
+                  VolumeBlockStats &stats) {
+  constexpr size_t distinctValueLimit = 4096;
+
+  stats = VolumeBlockStats{};
+  stats.voxelCount = values.size();
+  if (values.empty()) {
+    return;
+  }
+
+  std::set<float> distinctValues;
+  double sum = 0.0;
+  stats.minValue = static_cast<double>(values.front());
+  stats.maxValue = static_cast<double>(values.front());
+  for (const float value : values) {
+    const double doubleValue = static_cast<double>(value);
+    stats.minValue = std::min(stats.minValue, doubleValue);
+    stats.maxValue = std::max(stats.maxValue, doubleValue);
+    sum += doubleValue;
+    if (!IsBackground(value, backgroundValue, epsilon)) {
+      ++stats.nonBackgroundCount;
+    }
+    if (distinctValues.size() < distinctValueLimit) {
+      distinctValues.insert(value);
+    } else {
+      stats.distinctValueLimitReached = true;
+    }
+  }
+  stats.meanValue = sum / static_cast<double>(values.size());
+  stats.distinctValueCount = distinctValues.size();
 }
 
 void IncludeVoxelIndex(VolumeIndexBounds &bounds,
@@ -108,6 +227,23 @@ bool BinVolumeReader::ScanNonBackgroundBounds(
   return true;
 }
 
+bool BinVolumeReader::ScanBlockStats(
+    const std::string &path,
+    const std::array<int, 3> &sourceDims,
+    const std::array<int, 3> &blockStart,
+    const std::array<int, 3> &blockDims,
+    double backgroundValue,
+    double epsilon,
+    VolumeBlockStats &stats,
+    std::string &error) {
+  std::vector<float> values;
+  if (!ReadBlockValues(path, sourceDims, blockStart, blockDims, values, error)) {
+    return false;
+  }
+  ComputeStats(values, backgroundValue, epsilon, stats);
+  return true;
+}
+
 vtkSmartPointer<vtkImageData> BinVolumeReader::Read(
     const std::string &path,
     const std::array<int, 3> &dims,
@@ -144,6 +280,44 @@ vtkSmartPointer<vtkImageData> BinVolumeReader::Read(
   scalars->SetNumberOfComponents(1);
   scalars->SetNumberOfTuples(voxelCount);
   std::memcpy(scalars->GetVoidPointer(0), buffer.data(), expectedBytes);
+  image->GetCellData()->SetScalars(scalars);
+
+  return image;
+}
+
+vtkSmartPointer<vtkImageData> BinVolumeReader::ReadBlock(
+    const std::string &path,
+    const std::array<int, 3> &sourceDims,
+    const std::array<double, 3> &spacing,
+    const std::array<double, 3> &origin,
+    const std::array<int, 3> &blockStart,
+    const std::array<int, 3> &blockDims,
+    const std::string &scalarName,
+    double backgroundValue,
+    double epsilon,
+    VolumeBlockStats *stats,
+    std::string &error) {
+  std::vector<float> values;
+  if (!ReadBlockValues(path, sourceDims, blockStart, blockDims, values, error)) {
+    return nullptr;
+  }
+
+  if (stats) {
+    ComputeStats(values, backgroundValue, epsilon, *stats);
+  }
+
+  vtkSmartPointer<vtkImageData> image = vtkSmartPointer<vtkImageData>::New();
+  image->SetDimensions(blockDims[0] + 1, blockDims[1] + 1, blockDims[2] + 1);
+  image->SetSpacing(spacing[0], spacing[1], spacing[2]);
+  image->SetOrigin(origin[0] + static_cast<double>(blockStart[0]) * spacing[0],
+                   origin[1] + static_cast<double>(blockStart[1]) * spacing[1],
+                   origin[2] + static_cast<double>(blockStart[2]) * spacing[2]);
+
+  vtkSmartPointer<vtkFloatArray> scalars = vtkSmartPointer<vtkFloatArray>::New();
+  scalars->SetName(scalarName.c_str());
+  scalars->SetNumberOfComponents(1);
+  scalars->SetNumberOfTuples(values.size());
+  std::memcpy(scalars->GetVoidPointer(0), values.data(), values.size() * sizeof(float));
   image->GetCellData()->SetScalars(scalars);
 
   return image;

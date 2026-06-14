@@ -10,11 +10,16 @@
 
 class VtkSceneWriter {
 public:
+  static bool WriteImageData(
+      const std::string &path,
+      vtkSmartPointer<vtkImageData> image,
+      std::string &error);
+
   static bool WriteScene(
-    const std::string &outputDir,
-    const std::string &sceneFileName,
+      const std::string &outputDir,
+      const std::string &sceneFileName,
       vtkSmartPointer<vtkImageData> activity,
       vtkSmartPointer<vtkImageData> attenuation,
-  const std::vector<SurfaceData> &surfaces,
+      const std::vector<SurfaceData> &surfaces,
       std::string &error);
 };

@@ -286,6 +286,61 @@ represents the full body support, and falls back to activity files otherwise.
 Explicit `--spacing` and `--origin` values always take priority. Use
 `--no-fit-volume-to-surfaces` to keep the old default index-space placement.
 
+### VTI grid subdivision for student projects
+
+Use `--sample-vti-blocks N` to subdivide the entire non-background bounding
+box of each activity or attenuation volume into a uniform 3-D grid of `.vti`
+blocks. This lets you hand students a small, self-contained spatial region of
+the phantom without revealing the full data.
+
+```bash
+./xcat2vtk \
+  --activity ../data/260602_act_1.bin \
+  --output ../vtk_output \
+  --dims 750 750 750 \
+  --sample-vti-blocks 64
+```
+
+The converter factorises **N** into `(nx, ny, nz)` to produce the most
+cube-like blocks given the bounding-box proportions. For example:
+
+| N | Grid | Notes |
+|---|------|-------|
+| 8 | 2×2×2 | perfect cube |
+| 27 | 3×3×3 | perfect cube |
+| 64 | 4×4×4 | perfect cube |
+| 10 | 1×2×5 | best aspect ratio for equal extents |
+| 100 | 4×5×5 | near-cube |
+
+If **N** is prime the grid degenerates to `1×1×N`; use a nearby composite
+number for better block shapes.
+
+The sample files are written under:
+
+```text
+time_000/
+  vti_samples/
+    activity/
+      activity_grid_000_000_000.vti
+      activity_grid_001_000_000.vti
+      ...
+```
+
+The filename encodes the zero-indexed grid cell `(ix, iy, iz)`. Each `.vti`
+block includes a `xcat2vtk_sample_metadata` field-data array with:
+
+- `grid_label`, `grid_strategy`, `grid_cell_ijk`, `grid_linear_index`
+- `grid_divisions_ijk`, `grid_total_count`, `grid_requested_count`
+- `source_path`, `source_scalar`, `frame`, `source_dims_ijk`
+- `block_start_ijk`, `block_end_ijk`, `block_dims_ijk`
+- `sample_bounds_kind`, `sample_bounds_min_ijk`, `sample_bounds_max_ijk`
+- `spacing`, `block_physical_origin`, `block_physical_max`
+- `non_background_fraction`, `non_background_voxels`, `voxel_count`
+- `scalar_min`, `scalar_max`, `scalar_mean`
+- `distinct_scalar_values_observed`, `distinct_scalar_values_capped`
+
+`--subsample-vti-blocks N` is accepted as an alias.
+
 ## Notes on XCAT Surface Files
 
 The `.raw` surface files are expected to contain triangle data in the format:

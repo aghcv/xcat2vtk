@@ -15,20 +15,6 @@
 #include <vtkXMLPolyDataWriter.h>
 
 namespace {
-bool WriteImage(const std::string &path,
-                vtkSmartPointer<vtkImageData> image,
-                std::string &error) {
-  vtkSmartPointer<vtkXMLImageDataWriter> writer =
-      vtkSmartPointer<vtkXMLImageDataWriter>::New();
-  writer->SetFileName(path.c_str());
-  writer->SetInputData(image);
-  if (writer->Write() == 0) {
-    error = "Failed to write image data: " + path;
-    return false;
-  }
-  return true;
-}
-
 bool WritePolyData(const std::string &path,
                    vtkSmartPointer<vtkPolyData> polyData,
                    const std::string &label,
@@ -58,12 +44,37 @@ bool WritePolyData(const std::string &path,
 }
 } // namespace
 
+bool VtkSceneWriter::WriteImageData(const std::string &path,
+                                    vtkSmartPointer<vtkImageData> image,
+                                    std::string &error) {
+  const std::filesystem::path imagePath(path);
+  const std::filesystem::path parent = imagePath.parent_path();
+  if (!parent.empty()) {
+    std::error_code fsError;
+    std::filesystem::create_directories(parent, fsError);
+    if (fsError) {
+      error = "Failed to create output directory: " + parent.string();
+      return false;
+    }
+  }
+
+  vtkSmartPointer<vtkXMLImageDataWriter> writer =
+      vtkSmartPointer<vtkXMLImageDataWriter>::New();
+  writer->SetFileName(path.c_str());
+  writer->SetInputData(image);
+  if (writer->Write() == 0) {
+    error = "Failed to write image data: " + path;
+    return false;
+  }
+  return true;
+}
+
 bool VtkSceneWriter::WriteScene(
     const std::string &outputDir,
     const std::string &sceneFileName,
     vtkSmartPointer<vtkImageData> activity,
     vtkSmartPointer<vtkImageData> attenuation,
-  const std::vector<SurfaceData> &surfaces,
+    const std::vector<SurfaceData> &surfaces,
     std::string &error) {
   std::filesystem::path outDir;
   if (outputDir.empty()) {
@@ -85,7 +96,7 @@ bool VtkSceneWriter::WriteScene(
 
   if (activity) {
     const std::filesystem::path vtiPath = outDir / "activity.vti";
-    if (!WriteImage(vtiPath.string(), activity, error)) {
+    if (!WriteImageData(vtiPath.string(), activity, error)) {
       return false;
     }
     multiBlock->SetBlock(blockIndex, activity);
@@ -95,7 +106,7 @@ bool VtkSceneWriter::WriteScene(
 
   if (attenuation) {
     const std::filesystem::path vtiPath = outDir / "attenuation.vti";
-    if (!WriteImage(vtiPath.string(), attenuation, error)) {
+    if (!WriteImageData(vtiPath.string(), attenuation, error)) {
       return false;
     }
     multiBlock->SetBlock(blockIndex, attenuation);

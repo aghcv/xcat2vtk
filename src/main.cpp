@@ -1,12 +1,15 @@
 #include <algorithm>
 #include <array>
 #include <cctype>
+#include <cmath>
 #include <filesystem>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <map>
 #include <regex>
 #include <set>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -14,8 +17,10 @@
 #include "RawSurfaceReader.h"
 #include "VtkSceneWriter.h"
 
+#include <vtkFieldData.h>
 #include <vtkImageData.h>
 #include <vtkPolyData.h>
+#include <vtkStringArray.h>
 
 namespace {
 struct Options {
@@ -42,6 +47,7 @@ struct Options {
   bool originProvided = false;
   bool stableSurfaceOrder = true;
   bool fitVolumeToSurfaces = true;
+  int sampleVtiBlockCount = 0;
   bool showHelp = false;
 };
 
@@ -69,6 +75,9 @@ void PrintHelp() {
       << "  --volume-background VALUE  Background value for occupied-voxel fitting (default: 0)\n"
       << "  --volume-background-epsilon EPS  Occupied-voxel tolerance (default: 0)\n"
       << "  --volume-fit-source <auto|attenuation|activity|union>\n"
+      << "  --sample-vti-blocks N   Subdivide the non-background bounding box uniformly into\n"
+      << "                          N blocks (e.g. 64 → 4x4x4 grid, 8 → 2x2x2).\n"
+      << "                          Actual count = nx*ny*nz from best cube-like factorization.\n"
       << "  --help                    Show this message\n";
 }
 
@@ -241,6 +250,21 @@ bool ParseArgs(int argc, char **argv, Options &options, std::string &error) {
           options.volumeFitSource != "activity" &&
           options.volumeFitSource != "union") {
         error = "Invalid --volume-fit-source; expected auto, attenuation, activity, or union";
+        return false;
+      }
+    } else if (arg == "--sample-vti-blocks" || arg == "--subsample-vti-blocks") {
+      if (i + 1 >= argc) {
+        error = "--sample-vti-blocks requires a positive integer count (e.g. --sample-vti-blocks 64)";
+        return false;
+      }
+      try {
+        options.sampleVtiBlockCount = std::stoi(argv[++i]);
+      } catch (const std::exception &) {
+        error = "Invalid integer for --sample-vti-blocks";
+        return false;
+      }
+      if (options.sampleVtiBlockCount <= 0) {
+        error = "--sample-vti-blocks count must be a positive integer";
         return false;
       }
     } else {
@@ -689,6 +713,309 @@ std::string PadFrame(int frame) {
   return std::string(3 - value.size(), '0') + value;
 }
 
+std::string PadNumber(int value, size_t width) {
+  std::ostringstream out;
+  out << std::setw(static_cast<int>(width)) << std::setfill('0') << value;
+  return out.str();
+}
+
+std::string FormatDouble(double value) {
+  std::ostringstream out;
+  out << std::setprecision(12) << value;
+  return out.str();
+}
+
+std::string FormatIntTriplet(const std::array<int, 3> &values) {
+  return std::to_string(values[0]) + "," + std::to_string(values[1]) + "," +
+         std::to_string(values[2]);
+}
+
+std::string FormatDoubleTriplet(const std::array<double, 3> &values) {
+  return FormatDouble(values[0]) + "," + FormatDouble(values[1]) + "," +
+         FormatDouble(values[2]);
+}
+
+VolumeIndexBounds FullVolumeBounds(const std::array<int, 3> &dims) {
+  VolumeIndexBounds bounds;
+  bounds.valid = true;
+  bounds.min = {0, 0, 0};
+  bounds.max = {dims[0] - 1, dims[1] - 1, dims[2] - 1};
+  return bounds;
+}
+
+std::array<int, 3> BoundsExtent(const VolumeIndexBounds &bounds) {
+  return {bounds.max[0] - bounds.min[0] + 1,
+          bounds.max[1] - bounds.min[1] + 1,
+          bounds.max[2] - bounds.min[2] + 1};
+}
+
+// ---------------------------------------------------------------------------
+// Uniform grid subdivision helpers
+// ---------------------------------------------------------------------------
+
+// Find (nx, ny, nz) with nx*ny*nz == targetN that produces the most
+// cube-like blocks given the axis extents.  Assigns the largest factor to
+// the longest axis so block aspect ratios are minimised.
+std::array<int, 3> ComputeGridDivisions(int targetN,
+                                        const std::array<int, 3> &extents) {
+  std::array<int, 3> bestDiv = {1, 1, targetN};
+  double bestAspect = std::numeric_limits<double>::max();
+
+  for (int a = 1; a <= targetN; ++a) {
+    if (targetN % a != 0) {
+      continue;
+    }
+    const int remA = targetN / a;
+    for (int b = a; b <= remA; ++b) {
+      if (remA % b != 0) {
+        continue;
+      }
+      const int c = remA / b;
+      if (c < b) {
+        break;
+      }
+      // a <= b <= c, a*b*c == targetN
+      // Assign largest factor to longest axis
+      std::array<int, 3> sortedIdx = {0, 1, 2};
+      std::sort(sortedIdx.begin(), sortedIdx.end(), [&](int x, int y) {
+        return extents[x] > extents[y];
+      });
+      std::array<int, 3> divs;
+      divs[sortedIdx[0]] = c;
+      divs[sortedIdx[1]] = b;
+      divs[sortedIdx[2]] = a;
+
+      const double bx =
+          static_cast<double>(std::max(extents[0], 1)) / static_cast<double>(divs[0]);
+      const double by =
+          static_cast<double>(std::max(extents[1], 1)) / static_cast<double>(divs[1]);
+      const double bz =
+          static_cast<double>(std::max(extents[2], 1)) / static_cast<double>(divs[2]);
+      const double maxB = std::max({bx, by, bz});
+      const double minB = std::min({bx, by, bz});
+      const double aspect =
+          (minB > 0.0) ? maxB / minB : std::numeric_limits<double>::max();
+
+      if (aspect < bestAspect) {
+        bestAspect = aspect;
+        bestDiv = divs;
+      }
+    }
+  }
+
+  return bestDiv;
+}
+
+std::string GridBlockFileName(const std::string &scalarName,
+                              const std::array<int, 3> &gridIjk) {
+  return scalarName + "_grid_" + PadNumber(gridIjk[0], 3) + "_" +
+         PadNumber(gridIjk[1], 3) + "_" + PadNumber(gridIjk[2], 3) + ".vti";
+}
+
+void AddMetadata(vtkStringArray *metadata,
+                 const std::string &key,
+                 const std::string &value) {
+  metadata->InsertNextValue(key + "=" + value);
+}
+
+void AddVtiGridBlockMetadata(vtkSmartPointer<vtkImageData> image,
+                             const std::string &sourcePath,
+                             const std::string &scalarName,
+                             const std::array<int, 3> &sourceDims,
+                             int frame,
+                             const std::array<int, 3> &gridIjk,
+                             int gridLinearIndex,
+                             const std::array<int, 3> &gridDivisions,
+                             const std::array<int, 3> &blockStart,
+                             const std::array<int, 3> &blockDims,
+                             int requestedCount,
+                             const VolumeIndexBounds &sampleBounds,
+                             const std::string &sampleBoundsKind,
+                             const std::array<double, 3> &spacing,
+                             const std::array<double, 3> &origin,
+                             const VolumeBlockStats &stats) {
+  vtkSmartPointer<vtkStringArray> metadata = vtkSmartPointer<vtkStringArray>::New();
+  metadata->SetName("xcat2vtk_sample_metadata");
+
+  const std::array<int, 3> blockEnd = {
+      blockStart[0] + blockDims[0] - 1,
+      blockStart[1] + blockDims[1] - 1,
+      blockStart[2] + blockDims[2] - 1};
+  const std::array<double, 3> blockPhysicalOrigin = {
+      origin[0] + static_cast<double>(blockStart[0]) * spacing[0],
+      origin[1] + static_cast<double>(blockStart[1]) * spacing[1],
+      origin[2] + static_cast<double>(blockStart[2]) * spacing[2]};
+  const std::array<double, 3> blockPhysicalMax = {
+      origin[0] + static_cast<double>(blockEnd[0] + 1) * spacing[0],
+      origin[1] + static_cast<double>(blockEnd[1] + 1) * spacing[1],
+      origin[2] + static_cast<double>(blockEnd[2] + 1) * spacing[2]};
+
+  const int totalCount =
+      gridDivisions[0] * gridDivisions[1] * gridDivisions[2];
+
+  AddMetadata(metadata, "grid_label",
+              scalarName + "_grid_" + PadNumber(gridIjk[0], 3) + "_" +
+                  PadNumber(gridIjk[1], 3) + "_" + PadNumber(gridIjk[2], 3));
+  AddMetadata(metadata, "grid_strategy", "uniform bounding-box subdivision");
+  AddMetadata(metadata, "grid_cell_ijk", FormatIntTriplet(gridIjk));
+  AddMetadata(metadata, "grid_linear_index", std::to_string(gridLinearIndex));
+  AddMetadata(metadata, "grid_divisions_ijk", FormatIntTriplet(gridDivisions));
+  AddMetadata(metadata, "grid_total_count", std::to_string(totalCount));
+  AddMetadata(metadata, "grid_requested_count", std::to_string(requestedCount));
+  AddMetadata(metadata, "source_path", sourcePath);
+  AddMetadata(metadata, "source_scalar", scalarName);
+  AddMetadata(metadata, "frame", std::to_string(frame));
+  AddMetadata(metadata, "source_dims_ijk", FormatIntTriplet(sourceDims));
+  AddMetadata(metadata, "block_start_ijk", FormatIntTriplet(blockStart));
+  AddMetadata(metadata, "block_end_ijk", FormatIntTriplet(blockEnd));
+  AddMetadata(metadata, "block_dims_ijk", FormatIntTriplet(blockDims));
+  AddMetadata(metadata, "sample_bounds_kind", sampleBoundsKind);
+  AddMetadata(metadata, "sample_bounds_min_ijk", FormatIntTriplet(sampleBounds.min));
+  AddMetadata(metadata, "sample_bounds_max_ijk", FormatIntTriplet(sampleBounds.max));
+  AddMetadata(metadata, "spacing", FormatDoubleTriplet(spacing));
+  AddMetadata(metadata, "block_physical_origin", FormatDoubleTriplet(blockPhysicalOrigin));
+  AddMetadata(metadata, "block_physical_max", FormatDoubleTriplet(blockPhysicalMax));
+
+  const double nonBgFraction =
+      (stats.voxelCount > 0)
+          ? static_cast<double>(stats.nonBackgroundCount) /
+                static_cast<double>(stats.voxelCount)
+          : 0.0;
+  AddMetadata(metadata, "non_background_fraction", FormatDouble(nonBgFraction));
+  AddMetadata(metadata, "non_background_voxels",
+              std::to_string(stats.nonBackgroundCount));
+  AddMetadata(metadata, "voxel_count", std::to_string(stats.voxelCount));
+  AddMetadata(metadata, "scalar_min", FormatDouble(stats.minValue));
+  AddMetadata(metadata, "scalar_max", FormatDouble(stats.maxValue));
+  AddMetadata(metadata, "scalar_mean", FormatDouble(stats.meanValue));
+  AddMetadata(metadata, "distinct_scalar_values_observed",
+              std::to_string(stats.distinctValueCount));
+  AddMetadata(metadata, "distinct_scalar_values_capped",
+              stats.distinctValueLimitReached ? "true" : "false");
+
+  image->GetFieldData()->AddArray(metadata);
+}
+
+bool WriteVtiGridBlocks(const std::string &volumePath,
+                        const std::string &scalarName,
+                        int frame,
+                        const std::filesystem::path &frameDir,
+                        const Options &options,
+                        const std::array<double, 3> &spacing,
+                        const std::array<double, 3> &origin,
+                        std::string &error) {
+  VolumeIndexBounds occupiedBounds;
+  if (!BinVolumeReader::ScanNonBackgroundBounds(volumePath,
+                                                options.dims,
+                                                options.volumeBackgroundValue,
+                                                options.volumeBackgroundEpsilon,
+                                                occupiedBounds,
+                                                error)) {
+    return false;
+  }
+
+  VolumeIndexBounds sampleBounds;
+  std::string sampleBoundsKind;
+  if (occupiedBounds.valid) {
+    sampleBounds = occupiedBounds;
+    sampleBoundsKind = "non_background";
+  } else {
+    sampleBounds = FullVolumeBounds(options.dims);
+    sampleBoundsKind = "full_volume";
+    std::cerr << "Warning: no non-background voxels found in " << volumePath
+              << "; grid subdivision uses the full volume bounds.\n";
+  }
+
+  const std::array<int, 3> extent = {
+      sampleBounds.max[0] - sampleBounds.min[0] + 1,
+      sampleBounds.max[1] - sampleBounds.min[1] + 1,
+      sampleBounds.max[2] - sampleBounds.min[2] + 1};
+
+  const std::array<int, 3> divisions =
+      ComputeGridDivisions(options.sampleVtiBlockCount, extent);
+  const int totalBlocks = divisions[0] * divisions[1] * divisions[2];
+
+  if (totalBlocks != options.sampleVtiBlockCount) {
+    std::cout << "Note: " << options.sampleVtiBlockCount
+              << " factors into a " << divisions[0] << "x" << divisions[1]
+              << "x" << divisions[2] << " grid (" << totalBlocks
+              << " blocks) for " << scalarName << ".\n";
+  }
+
+  // Base block size (last block per axis may be smaller)
+  const std::array<int, 3> blockDims = {
+      (extent[0] + divisions[0] - 1) / divisions[0],
+      (extent[1] + divisions[1] - 1) / divisions[1],
+      (extent[2] + divisions[2] - 1) / divisions[2]};
+
+  int linearIndex = 0;
+  for (int iz = 0; iz < divisions[2]; ++iz) {
+    for (int iy = 0; iy < divisions[1]; ++iy) {
+      for (int ix = 0; ix < divisions[0]; ++ix) {
+        const std::array<int, 3> gridIjk = {ix, iy, iz};
+        const std::array<int, 3> blockStart = {
+            sampleBounds.min[0] + ix * blockDims[0],
+            sampleBounds.min[1] + iy * blockDims[1],
+            sampleBounds.min[2] + iz * blockDims[2]};
+        // Clamp last block so it does not exceed the bounding box
+        const std::array<int, 3> actualDims = {
+            std::min(blockDims[0], sampleBounds.max[0] - blockStart[0] + 1),
+            std::min(blockDims[1], sampleBounds.max[1] - blockStart[1] + 1),
+            std::min(blockDims[2], sampleBounds.max[2] - blockStart[2] + 1)};
+
+        VolumeBlockStats stats;
+        vtkSmartPointer<vtkImageData> image = BinVolumeReader::ReadBlock(
+            volumePath,
+            options.dims,
+            spacing,
+            origin,
+            blockStart,
+            actualDims,
+            scalarName,
+            options.volumeBackgroundValue,
+            options.volumeBackgroundEpsilon,
+            &stats,
+            error);
+        if (!image) {
+          return false;
+        }
+
+        AddVtiGridBlockMetadata(image,
+                                volumePath,
+                                scalarName,
+                                options.dims,
+                                frame,
+                                gridIjk,
+                                linearIndex,
+                                divisions,
+                                blockStart,
+                                actualDims,
+                                options.sampleVtiBlockCount,
+                                sampleBounds,
+                                sampleBoundsKind,
+                                spacing,
+                                origin,
+                                stats);
+
+        const std::filesystem::path blockPath =
+            frameDir / "vti_samples" / scalarName /
+            GridBlockFileName(scalarName, gridIjk);
+        if (!VtkSceneWriter::WriteImageData(blockPath.string(), image, error)) {
+          return false;
+        }
+
+        ++linearIndex;
+      }
+    }
+  }
+
+  std::cout << "Wrote " << totalBlocks << " VTI grid blocks ("
+            << divisions[0] << "x" << divisions[1] << "x" << divisions[2]
+            << ") for " << scalarName << " -> "
+            << (frameDir / "vti_samples" / scalarName).string() << "\n";
+  return true;
+}
+
 bool WritePvd(const std::filesystem::path &baseOutput,
               const std::string &id,
               const std::vector<int> &frames,
@@ -895,6 +1222,33 @@ int main(int argc, char **argv) {
             error)) {
       std::cerr << "Error: " << error << "\n";
       return 1;
+    }
+
+    if (options.sampleVtiBlockCount > 0) {
+      if (!inputs.activityPath.empty() &&
+          !WriteVtiGridBlocks(inputs.activityPath,
+                              "activity",
+                              frame,
+                              frameDir,
+                              options,
+                              volumeSpacing,
+                              volumeOrigin,
+                              error)) {
+        std::cerr << "Error: " << error << "\n";
+        return 1;
+      }
+      if (!inputs.attenuationPath.empty() &&
+          !WriteVtiGridBlocks(inputs.attenuationPath,
+                              "attenuation",
+                              frame,
+                              frameDir,
+                              options,
+                              volumeSpacing,
+                              volumeOrigin,
+                              error)) {
+        std::cerr << "Error: " << error << "\n";
+        return 1;
+      }
     }
   }
 
