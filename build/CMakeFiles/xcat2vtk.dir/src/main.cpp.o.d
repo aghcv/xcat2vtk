@@ -955,5 +955,6 @@ CMakeFiles/xcat2vtk.dir/src/main.cpp.o: \
   /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.5/vtkAbstractCellLinks.h \
   /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.5/vtkPolyDataInternals.h \
   /Users/aghorban/code/xcat2vtk/src/VtkSceneWriter.h \
+  /Users/aghorban/code/xcat2vtk/src/AnatomyClassifier.h \
   /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.5/vtkFieldData.h \
   /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.5/vtkStringArray.h

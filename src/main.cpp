@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <iostream>
 #include <map>
+#include <memory>
 #include <regex>
 #include <set>
 #include <sstream>
@@ -48,6 +49,11 @@ struct Options {
   bool stableSurfaceOrder = true;
   bool fitVolumeToSurfaces = true;
   int sampleVtiBlockCount = 0;
+  bool anatomyHierarchy = false;
+  bool flatBlocks = false;
+  bool strictAnatomy = false;
+  std::string anatomyConfigPath;
+  std::string anatomyReportPath;
   bool showHelp = false;
 };
 
@@ -78,6 +84,11 @@ void PrintHelp() {
       << "  --sample-vti-blocks N   Subdivide the non-background bounding box uniformly into\n"
       << "                          N blocks (e.g. 64 → 4x4x4 grid, 8 → 2x2x2).\n"
       << "                          Actual count = nx*ny*nz from best cube-like factorization.\n"
+      << "  --anatomy-hierarchy     Write nested anatomical surface groups instead of flat blocks\n"
+      << "  --anatomy-config PATH    Optional YAML anatomy rule/alias overlay\n"
+      << "  --anatomy-report PATH    Write a CSV anatomy classification report\n"
+      << "  --strict-anatomy         Fail when any surface label is unclassified\n"
+      << "  --flat-blocks            Explicitly request legacy flat multiblock output\n"
       << "  --help                    Show this message\n";
 }
 
@@ -267,6 +278,24 @@ bool ParseArgs(int argc, char **argv, Options &options, std::string &error) {
         error = "--sample-vti-blocks count must be a positive integer";
         return false;
       }
+    } else if (arg == "--anatomy-hierarchy") {
+      options.anatomyHierarchy = true;
+    } else if (arg == "--flat-blocks") {
+      options.flatBlocks = true;
+    } else if (arg == "--strict-anatomy") {
+      options.strictAnatomy = true;
+    } else if (arg == "--anatomy-config") {
+      if (i + 1 >= argc) {
+        error = "Missing value for --anatomy-config";
+        return false;
+      }
+      options.anatomyConfigPath = argv[++i];
+    } else if (arg == "--anatomy-report") {
+      if (i + 1 >= argc) {
+        error = "Missing value for --anatomy-report";
+        return false;
+      }
+      options.anatomyReportPath = argv[++i];
     } else {
       error = "Unknown argument: " + arg;
       return false;
@@ -365,6 +394,10 @@ bool AppendSurfaces(const std::string &path,
   std::vector<SurfaceData> local;
   if (!RawSurfaceReader::ReadAll(path, groupLabel, scale, translate, local, error)) {
     return false;
+  }
+  const int baseIndex = static_cast<int>(surfaces.size());
+  for (size_t i = 0; i < local.size(); ++i) {
+    local[i].originalIndex = baseIndex + static_cast<int>(i);
   }
   surfaces.insert(surfaces.end(), local.begin(), local.end());
   return true;
@@ -599,6 +632,9 @@ bool ScanVolumeBoundsForFit(const std::map<int, FrameInputs> &frames,
 SurfaceData MakeEmptySurface(const std::string &label) {
   SurfaceData surface;
   surface.label = label;
+  surface.originalLabel = label;
+  surface.originalIndex = -1;
+  surface.placeholder = true;
   surface.data = vtkSmartPointer<vtkPolyData>::New();
   return surface;
 }
@@ -1058,6 +1094,19 @@ int main(int argc, char **argv) {
     return 0;
   }
 
+  if (options.anatomyHierarchy && options.flatBlocks) {
+    std::cerr << "Error: Use either --anatomy-hierarchy or --flat-blocks, not both.\n";
+    return 1;
+  }
+
+  if ((options.strictAnatomy || !options.anatomyConfigPath.empty() ||
+       !options.anatomyReportPath.empty()) &&
+      !options.anatomyHierarchy) {
+    std::cerr << "Error: --strict-anatomy, --anatomy-config, and --anatomy-report "
+                 "require --anatomy-hierarchy.\n";
+    return 1;
+  }
+
   std::filesystem::path autoBaseDir;
   std::map<int, FrameInputs> autoFrames;
   if (!ResolveAutoInputs(options, autoBaseDir, autoFrames, error)) {
@@ -1162,6 +1211,38 @@ int main(int argc, char **argv) {
     baseOutput /= options.id;
   }
 
+  AnatomyConfig anatomyConfig;
+  AnatomySummary anatomySummary;
+  std::ofstream anatomyReport;
+  if (options.anatomyHierarchy) {
+    if (!LoadDefaultOrConfiguredAnatomyConfig(options.anatomyConfigPath,
+                                              anatomyConfig,
+                                              error)) {
+      std::cerr << "Error: " << error << "\n";
+      return 1;
+    }
+    if (!options.anatomyReportPath.empty()) {
+      const std::filesystem::path reportPath(options.anatomyReportPath);
+      const std::filesystem::path reportParent = reportPath.parent_path();
+      if (!reportParent.empty()) {
+        std::error_code fsError;
+        std::filesystem::create_directories(reportParent, fsError);
+        if (fsError) {
+          std::cerr << "Error: Failed to create anatomy report directory: "
+                    << reportParent.string() << "\n";
+          return 1;
+        }
+      }
+      anatomyReport.open(reportPath, std::ios::trunc);
+      if (!anatomyReport.is_open()) {
+        std::cerr << "Error: Failed to write anatomy report: "
+                  << reportPath.string() << "\n";
+        return 1;
+      }
+      WriteAnatomyReportHeader(anatomyReport);
+    }
+  }
+
   for (const int frame : framesToProcess) {
     const auto &inputs = frames[frame];
     vtkSmartPointer<vtkImageData> activity;
@@ -1213,13 +1294,26 @@ int main(int argc, char **argv) {
     }
 
     const std::filesystem::path frameDir = baseOutput / ("time_" + PadFrame(frame));
+    VtkSceneWriteOptions sceneWriteOptions;
+    sceneWriteOptions.anatomyHierarchy = options.anatomyHierarchy && !options.flatBlocks;
+    sceneWriteOptions.strictAnatomy = options.strictAnatomy;
+    sceneWriteOptions.anatomyConfig =
+        sceneWriteOptions.anatomyHierarchy ? &anatomyConfig : nullptr;
+    sceneWriteOptions.anatomyReport =
+        sceneWriteOptions.anatomyHierarchy && anatomyReport.is_open()
+            ? &anatomyReport
+            : nullptr;
+    sceneWriteOptions.anatomySummary =
+        sceneWriteOptions.anatomyHierarchy ? &anatomySummary : nullptr;
+
     if (!VtkSceneWriter::WriteScene(
             frameDir.string(),
             "scene.vtm",
             activity,
             attenuation,
             surfaces,
-            error)) {
+            error,
+            sceneWriteOptions)) {
       std::cerr << "Error: " << error << "\n";
       return 1;
     }
@@ -1258,5 +1352,17 @@ int main(int argc, char **argv) {
   }
 
   std::cout << "Wrote outputs under: " << baseOutput.string() << "\n";
+  if (options.anatomyHierarchy) {
+    std::cout << "\nAnatomical hierarchy summary\n";
+    std::cout << "-----------------------------\n";
+    std::cout << "Input blocks: " << anatomySummary.inputBlocks << "\n";
+    std::cout << "Classified blocks: " << anatomySummary.classifiedBlocks << "\n";
+    std::cout << "Unclassified blocks: " << anatomySummary.unclassifiedBlocks << "\n";
+    std::cout << "Unique normalized families: "
+              << anatomySummary.uniqueNormalizedFamilies.size() << "\n";
+    for (const auto &entry : anatomySummary.systemCounts) {
+      std::cout << entry.first << " blocks: " << entry.second << "\n";
+    }
+  }
   return 0;
 }

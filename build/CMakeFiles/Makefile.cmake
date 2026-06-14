@@ -110,5 +110,7 @@ set(CMAKE_MAKEFILE_PRODUCTS
 
 # Dependency information for all targets:
 set(CMAKE_DEPEND_INFO_FILES
+  "CMakeFiles/xcat2vtk_core.dir/DependInfo.cmake"
   "CMakeFiles/xcat2vtk.dir/DependInfo.cmake"
+  "CMakeFiles/xcat2vtk_anatomy_tests.dir/DependInfo.cmake"
   )

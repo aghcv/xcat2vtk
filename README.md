@@ -229,6 +229,107 @@ the `.vtm` and `.pvd` files are written:
 This keeps ParaView rendering order consistent across animation frames. Use
 `--no-stable-surface-order` to disable this behavior.
 
+## Anatomical Hierarchy Output
+
+Large whole-body XCAT surface sets can contain thousands of anatomical surface
+blocks. A flat multiblock list is difficult to navigate in ParaView, especially
+when selecting entire systems such as cardiovascular, respiratory,
+musculoskeletal, or nervous anatomy.
+
+Use `--anatomy-hierarchy` to write surfaces into a nested anatomical
+`vtkMultiBlockDataSet` while preserving every source surface as a leaf. Activity
+and attenuation volumes are grouped under `00_Fields`, and anatomical surfaces
+are placed under standardized top-level groups such as:
+
+```text
+01_Cardiovascular
+02_Nervous
+03_Respiratory
+04_Digestive
+05_Urinary
+09_Musculoskeletal
+10_Lymphatic_and_Immune
+99_Unclassified
+```
+
+Example:
+
+```bash
+./xcat2vtk \
+  --id 260602 \
+  --input ../data \
+  --output ../vtk_output \
+  --dims 750 750 750 \
+  --anatomy-hierarchy \
+  --anatomy-report ../vtk_output/anatomy_report.csv
+```
+
+Useful options:
+
+- `--anatomy-hierarchy` enables nested anatomical surface blocks.
+- `--anatomy-config PATH` overlays custom aliases and rules.
+- `--anatomy-report PATH` writes one CSV row per source surface block.
+- `--strict-anatomy` fails the run if any surface remains unclassified.
+- `--flat-blocks` explicitly requests the legacy flat multiblock layout.
+
+The flat layout remains the default for compatibility.
+
+Each anatomical leaf receives VTK field-data metadata including:
+
+```text
+OriginalBlockName
+OriginalBlockIndex
+CanonicalAnatomyName
+CanonicalAnatomyIdentifier
+AnatomicalSystem
+AnatomicalSubsystem
+AnatomicalRegion
+StructureType
+Laterality
+PieceNumber
+TemporalPhase
+ClassificationConfidence
+ClassificationRule
+SourceFile
+```
+
+Numbered fragments such as `bronchi_17` remain separate datasets. They are
+classified under a shared parent such as
+`03_Respiratory/Tracheobronchial_Tree/Bronchi`, with the piece number preserved
+in metadata and in the readable leaf name, for example `bronchus_017`.
+
+Classification rules live in `config/anatomy_hierarchy.yml`. The file supports a
+small dependency-free YAML subset:
+
+```yaml
+aliases:
+  lkidney:
+    canonical_name: kidney
+    laterality: left
+
+rules:
+  - id: pulmonary_artery
+    priority: 100
+    pattern: ".*pulmonary.*arter.*"
+    system: cardiovascular
+    subsystem: pulmonary_circulation/arteries
+    anatomical_region: thorax
+    structure_type: artery
+    hierarchy_path: 01_Cardiovascular/Pulmonary_Circulation/Arteries
+```
+
+Higher-priority rules run before generic fallbacks, so pulmonary arteries and
+veins are placed under pulmonary circulation instead of systemic vessels. Any
+label without a confident rule is preserved under `99_Unclassified` and printed
+as a warning.
+
+Validate a generated hierarchy with:
+
+```bash
+python3 scripts/validate_anatomy_hierarchy.py \
+  ../vtk_output/260602/time_001/scene.vtm
+```
+
 ## Development Philosophy
 
 This project should develop incrementally.

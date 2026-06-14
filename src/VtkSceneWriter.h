@@ -2,11 +2,21 @@
 
 #include <string>
 #include <vector>
+#include <iosfwd>
 
 #include <vtkImageData.h>
 #include <vtkSmartPointer.h>
 
+#include "AnatomyClassifier.h"
 #include "SurfaceTypes.h"
+
+struct VtkSceneWriteOptions {
+  bool anatomyHierarchy = false;
+  bool strictAnatomy = false;
+  const AnatomyConfig *anatomyConfig = nullptr;
+  std::ostream *anatomyReport = nullptr;
+  AnatomySummary *anatomySummary = nullptr;
+};
 
 class VtkSceneWriter {
 public:
@@ -21,5 +31,6 @@ public:
       vtkSmartPointer<vtkImageData> activity,
       vtkSmartPointer<vtkImageData> attenuation,
       const std::vector<SurfaceData> &surfaces,
-      std::string &error);
+      std::string &error,
+      const VtkSceneWriteOptions &options = VtkSceneWriteOptions{});
 };

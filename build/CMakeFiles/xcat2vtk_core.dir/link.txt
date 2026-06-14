@@ -1,0 +1,2 @@
+/usr/bin/ar qc libxcat2vtk_core.a CMakeFiles/xcat2vtk_core.dir/src/AnatomyClassifier.cpp.o CMakeFiles/xcat2vtk_core.dir/src/BinVolumeReader.cpp.o CMakeFiles/xcat2vtk_core.dir/src/RawSurfaceReader.cpp.o CMakeFiles/xcat2vtk_core.dir/src/VtkSceneWriter.cpp.o
+/usr/bin/ranlib libxcat2vtk_core.a

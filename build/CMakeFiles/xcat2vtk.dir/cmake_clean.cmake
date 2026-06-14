@@ -1,10 +1,4 @@
 file(REMOVE_RECURSE
-  "CMakeFiles/xcat2vtk.dir/src/BinVolumeReader.cpp.o"
-  "CMakeFiles/xcat2vtk.dir/src/BinVolumeReader.cpp.o.d"
-  "CMakeFiles/xcat2vtk.dir/src/RawSurfaceReader.cpp.o"
-  "CMakeFiles/xcat2vtk.dir/src/RawSurfaceReader.cpp.o.d"
-  "CMakeFiles/xcat2vtk.dir/src/VtkSceneWriter.cpp.o"
-  "CMakeFiles/xcat2vtk.dir/src/VtkSceneWriter.cpp.o.d"
   "CMakeFiles/xcat2vtk.dir/src/main.cpp.o"
   "CMakeFiles/xcat2vtk.dir/src/main.cpp.o.d"
   "xcat2vtk"

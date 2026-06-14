@@ -10,6 +10,10 @@
 struct SurfaceData {
   std::string group;
   std::string label;
+  std::string originalLabel;
+  std::string sourceFile;
+  int originalIndex = -1;
+  bool placeholder = false;
   vtkSmartPointer<vtkPolyData> data;
 };
 

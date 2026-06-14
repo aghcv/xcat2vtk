@@ -86,66 +86,19 @@ CMakeFiles/xcat2vtk.dir/src/main.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/xcat2vtk.dir/src/main.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/aghorban/code/xcat2vtk/src/main.cpp -o CMakeFiles/xcat2vtk.dir/src/main.cpp.s
 
-CMakeFiles/xcat2vtk.dir/src/BinVolumeReader.cpp.o: CMakeFiles/xcat2vtk.dir/flags.make
-CMakeFiles/xcat2vtk.dir/src/BinVolumeReader.cpp.o: /Users/aghorban/code/xcat2vtk/src/BinVolumeReader.cpp
-CMakeFiles/xcat2vtk.dir/src/BinVolumeReader.cpp.o: CMakeFiles/xcat2vtk.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/aghorban/code/xcat2vtk/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/xcat2vtk.dir/src/BinVolumeReader.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/xcat2vtk.dir/src/BinVolumeReader.cpp.o -MF CMakeFiles/xcat2vtk.dir/src/BinVolumeReader.cpp.o.d -o CMakeFiles/xcat2vtk.dir/src/BinVolumeReader.cpp.o -c /Users/aghorban/code/xcat2vtk/src/BinVolumeReader.cpp
-
-CMakeFiles/xcat2vtk.dir/src/BinVolumeReader.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/xcat2vtk.dir/src/BinVolumeReader.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/aghorban/code/xcat2vtk/src/BinVolumeReader.cpp > CMakeFiles/xcat2vtk.dir/src/BinVolumeReader.cpp.i
-
-CMakeFiles/xcat2vtk.dir/src/BinVolumeReader.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/xcat2vtk.dir/src/BinVolumeReader.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/aghorban/code/xcat2vtk/src/BinVolumeReader.cpp -o CMakeFiles/xcat2vtk.dir/src/BinVolumeReader.cpp.s
-
-CMakeFiles/xcat2vtk.dir/src/RawSurfaceReader.cpp.o: CMakeFiles/xcat2vtk.dir/flags.make
-CMakeFiles/xcat2vtk.dir/src/RawSurfaceReader.cpp.o: /Users/aghorban/code/xcat2vtk/src/RawSurfaceReader.cpp
-CMakeFiles/xcat2vtk.dir/src/RawSurfaceReader.cpp.o: CMakeFiles/xcat2vtk.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/aghorban/code/xcat2vtk/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/xcat2vtk.dir/src/RawSurfaceReader.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/xcat2vtk.dir/src/RawSurfaceReader.cpp.o -MF CMakeFiles/xcat2vtk.dir/src/RawSurfaceReader.cpp.o.d -o CMakeFiles/xcat2vtk.dir/src/RawSurfaceReader.cpp.o -c /Users/aghorban/code/xcat2vtk/src/RawSurfaceReader.cpp
-
-CMakeFiles/xcat2vtk.dir/src/RawSurfaceReader.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/xcat2vtk.dir/src/RawSurfaceReader.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/aghorban/code/xcat2vtk/src/RawSurfaceReader.cpp > CMakeFiles/xcat2vtk.dir/src/RawSurfaceReader.cpp.i
-
-CMakeFiles/xcat2vtk.dir/src/RawSurfaceReader.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/xcat2vtk.dir/src/RawSurfaceReader.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/aghorban/code/xcat2vtk/src/RawSurfaceReader.cpp -o CMakeFiles/xcat2vtk.dir/src/RawSurfaceReader.cpp.s
-
-CMakeFiles/xcat2vtk.dir/src/VtkSceneWriter.cpp.o: CMakeFiles/xcat2vtk.dir/flags.make
-CMakeFiles/xcat2vtk.dir/src/VtkSceneWriter.cpp.o: /Users/aghorban/code/xcat2vtk/src/VtkSceneWriter.cpp
-CMakeFiles/xcat2vtk.dir/src/VtkSceneWriter.cpp.o: CMakeFiles/xcat2vtk.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/aghorban/code/xcat2vtk/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/xcat2vtk.dir/src/VtkSceneWriter.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/xcat2vtk.dir/src/VtkSceneWriter.cpp.o -MF CMakeFiles/xcat2vtk.dir/src/VtkSceneWriter.cpp.o.d -o CMakeFiles/xcat2vtk.dir/src/VtkSceneWriter.cpp.o -c /Users/aghorban/code/xcat2vtk/src/VtkSceneWriter.cpp
-
-CMakeFiles/xcat2vtk.dir/src/VtkSceneWriter.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/xcat2vtk.dir/src/VtkSceneWriter.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/aghorban/code/xcat2vtk/src/VtkSceneWriter.cpp > CMakeFiles/xcat2vtk.dir/src/VtkSceneWriter.cpp.i
-
-CMakeFiles/xcat2vtk.dir/src/VtkSceneWriter.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/xcat2vtk.dir/src/VtkSceneWriter.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/aghorban/code/xcat2vtk/src/VtkSceneWriter.cpp -o CMakeFiles/xcat2vtk.dir/src/VtkSceneWriter.cpp.s
-
 # Object files for target xcat2vtk
 xcat2vtk_OBJECTS = \
-"CMakeFiles/xcat2vtk.dir/src/main.cpp.o" \
-"CMakeFiles/xcat2vtk.dir/src/BinVolumeReader.cpp.o" \
-"CMakeFiles/xcat2vtk.dir/src/RawSurfaceReader.cpp.o" \
-"CMakeFiles/xcat2vtk.dir/src/VtkSceneWriter.cpp.o"
+"CMakeFiles/xcat2vtk.dir/src/main.cpp.o"
 
 # External object files for target xcat2vtk
 xcat2vtk_EXTERNAL_OBJECTS =
 
 xcat2vtk: CMakeFiles/xcat2vtk.dir/src/main.cpp.o
-xcat2vtk: CMakeFiles/xcat2vtk.dir/src/BinVolumeReader.cpp.o
-xcat2vtk: CMakeFiles/xcat2vtk.dir/src/RawSurfaceReader.cpp.o
-xcat2vtk: CMakeFiles/xcat2vtk.dir/src/VtkSceneWriter.cpp.o
 xcat2vtk: CMakeFiles/xcat2vtk.dir/build.make
+xcat2vtk: libxcat2vtk_core.a
 xcat2vtk: /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/lib/libvtkIOImage-9.5.9.5.dylib
-xcat2vtk: /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/lib/libvtkIOXML-9.5.9.5.dylib
 xcat2vtk: /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/lib/libvtkImagingCore-9.5.9.5.dylib
+xcat2vtk: /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/lib/libvtkIOXML-9.5.9.5.dylib
 xcat2vtk: /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/lib/libvtkIOXMLParser-9.5.9.5.dylib
 xcat2vtk: /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/lib/libvtkCommonExecutionModel-9.5.9.5.dylib
 xcat2vtk: /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/lib/libvtkCommonDataModel-9.5.9.5.dylib
@@ -157,7 +110,7 @@ xcat2vtk: /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/lib/libvtktoken-9.5
 xcat2vtk: /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/lib/libtbb.12.17.dylib
 xcat2vtk: /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/lib/libvtkkissfft-9.5.9.5.dylib
 xcat2vtk: CMakeFiles/xcat2vtk.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/aghorban/code/xcat2vtk/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Linking CXX executable xcat2vtk"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/aghorban/code/xcat2vtk/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable xcat2vtk"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/xcat2vtk.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

@@ -65,6 +65,16 @@ CMAKE_BINARY_DIR = /Users/aghorban/code/xcat2vtk/build
 #=============================================================================
 # Targets provided globally by CMake.
 
+# Special rule for the target test
+test:
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Running tests..."
+	/opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/bin/ctest $(ARGS)
+.PHONY : test
+
+# Special rule for the target test
+test/fast: test
+.PHONY : test/fast
+
 # Special rule for the target edit_cache
 edit_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Running CMake cache editor..."
@@ -117,6 +127,19 @@ depend:
 .PHONY : depend
 
 #=============================================================================
+# Target rules for targets named xcat2vtk_core
+
+# Build rule for target.
+xcat2vtk_core: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 xcat2vtk_core
+.PHONY : xcat2vtk_core
+
+# fast build rule for target.
+xcat2vtk_core/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/xcat2vtk_core.dir/build.make CMakeFiles/xcat2vtk_core.dir/build
+.PHONY : xcat2vtk_core/fast
+
+#=============================================================================
 # Target rules for targets named xcat2vtk
 
 # Build rule for target.
@@ -129,12 +152,49 @@ xcat2vtk/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/xcat2vtk.dir/build.make CMakeFiles/xcat2vtk.dir/build
 .PHONY : xcat2vtk/fast
 
+#=============================================================================
+# Target rules for targets named xcat2vtk_anatomy_tests
+
+# Build rule for target.
+xcat2vtk_anatomy_tests: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 xcat2vtk_anatomy_tests
+.PHONY : xcat2vtk_anatomy_tests
+
+# fast build rule for target.
+xcat2vtk_anatomy_tests/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/xcat2vtk_anatomy_tests.dir/build.make CMakeFiles/xcat2vtk_anatomy_tests.dir/build
+.PHONY : xcat2vtk_anatomy_tests/fast
+
+src/AnatomyClassifier.o: src/AnatomyClassifier.cpp.o
+.PHONY : src/AnatomyClassifier.o
+
+# target to build an object file
+src/AnatomyClassifier.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/xcat2vtk_core.dir/build.make CMakeFiles/xcat2vtk_core.dir/src/AnatomyClassifier.cpp.o
+.PHONY : src/AnatomyClassifier.cpp.o
+
+src/AnatomyClassifier.i: src/AnatomyClassifier.cpp.i
+.PHONY : src/AnatomyClassifier.i
+
+# target to preprocess a source file
+src/AnatomyClassifier.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/xcat2vtk_core.dir/build.make CMakeFiles/xcat2vtk_core.dir/src/AnatomyClassifier.cpp.i
+.PHONY : src/AnatomyClassifier.cpp.i
+
+src/AnatomyClassifier.s: src/AnatomyClassifier.cpp.s
+.PHONY : src/AnatomyClassifier.s
+
+# target to generate assembly for a file
+src/AnatomyClassifier.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/xcat2vtk_core.dir/build.make CMakeFiles/xcat2vtk_core.dir/src/AnatomyClassifier.cpp.s
+.PHONY : src/AnatomyClassifier.cpp.s
+
 src/BinVolumeReader.o: src/BinVolumeReader.cpp.o
 .PHONY : src/BinVolumeReader.o
 
 # target to build an object file
 src/BinVolumeReader.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/xcat2vtk.dir/build.make CMakeFiles/xcat2vtk.dir/src/BinVolumeReader.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/xcat2vtk_core.dir/build.make CMakeFiles/xcat2vtk_core.dir/src/BinVolumeReader.cpp.o
 .PHONY : src/BinVolumeReader.cpp.o
 
 src/BinVolumeReader.i: src/BinVolumeReader.cpp.i
@@ -142,7 +202,7 @@ src/BinVolumeReader.i: src/BinVolumeReader.cpp.i
 
 # target to preprocess a source file
 src/BinVolumeReader.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/xcat2vtk.dir/build.make CMakeFiles/xcat2vtk.dir/src/BinVolumeReader.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/xcat2vtk_core.dir/build.make CMakeFiles/xcat2vtk_core.dir/src/BinVolumeReader.cpp.i
 .PHONY : src/BinVolumeReader.cpp.i
 
 src/BinVolumeReader.s: src/BinVolumeReader.cpp.s
@@ -150,7 +210,7 @@ src/BinVolumeReader.s: src/BinVolumeReader.cpp.s
 
 # target to generate assembly for a file
 src/BinVolumeReader.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/xcat2vtk.dir/build.make CMakeFiles/xcat2vtk.dir/src/BinVolumeReader.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/xcat2vtk_core.dir/build.make CMakeFiles/xcat2vtk_core.dir/src/BinVolumeReader.cpp.s
 .PHONY : src/BinVolumeReader.cpp.s
 
 src/RawSurfaceReader.o: src/RawSurfaceReader.cpp.o
@@ -158,7 +218,7 @@ src/RawSurfaceReader.o: src/RawSurfaceReader.cpp.o
 
 # target to build an object file
 src/RawSurfaceReader.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/xcat2vtk.dir/build.make CMakeFiles/xcat2vtk.dir/src/RawSurfaceReader.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/xcat2vtk_core.dir/build.make CMakeFiles/xcat2vtk_core.dir/src/RawSurfaceReader.cpp.o
 .PHONY : src/RawSurfaceReader.cpp.o
 
 src/RawSurfaceReader.i: src/RawSurfaceReader.cpp.i
@@ -166,7 +226,7 @@ src/RawSurfaceReader.i: src/RawSurfaceReader.cpp.i
 
 # target to preprocess a source file
 src/RawSurfaceReader.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/xcat2vtk.dir/build.make CMakeFiles/xcat2vtk.dir/src/RawSurfaceReader.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/xcat2vtk_core.dir/build.make CMakeFiles/xcat2vtk_core.dir/src/RawSurfaceReader.cpp.i
 .PHONY : src/RawSurfaceReader.cpp.i
 
 src/RawSurfaceReader.s: src/RawSurfaceReader.cpp.s
@@ -174,7 +234,7 @@ src/RawSurfaceReader.s: src/RawSurfaceReader.cpp.s
 
 # target to generate assembly for a file
 src/RawSurfaceReader.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/xcat2vtk.dir/build.make CMakeFiles/xcat2vtk.dir/src/RawSurfaceReader.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/xcat2vtk_core.dir/build.make CMakeFiles/xcat2vtk_core.dir/src/RawSurfaceReader.cpp.s
 .PHONY : src/RawSurfaceReader.cpp.s
 
 src/VtkSceneWriter.o: src/VtkSceneWriter.cpp.o
@@ -182,7 +242,7 @@ src/VtkSceneWriter.o: src/VtkSceneWriter.cpp.o
 
 # target to build an object file
 src/VtkSceneWriter.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/xcat2vtk.dir/build.make CMakeFiles/xcat2vtk.dir/src/VtkSceneWriter.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/xcat2vtk_core.dir/build.make CMakeFiles/xcat2vtk_core.dir/src/VtkSceneWriter.cpp.o
 .PHONY : src/VtkSceneWriter.cpp.o
 
 src/VtkSceneWriter.i: src/VtkSceneWriter.cpp.i
@@ -190,7 +250,7 @@ src/VtkSceneWriter.i: src/VtkSceneWriter.cpp.i
 
 # target to preprocess a source file
 src/VtkSceneWriter.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/xcat2vtk.dir/build.make CMakeFiles/xcat2vtk.dir/src/VtkSceneWriter.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/xcat2vtk_core.dir/build.make CMakeFiles/xcat2vtk_core.dir/src/VtkSceneWriter.cpp.i
 .PHONY : src/VtkSceneWriter.cpp.i
 
 src/VtkSceneWriter.s: src/VtkSceneWriter.cpp.s
@@ -198,7 +258,7 @@ src/VtkSceneWriter.s: src/VtkSceneWriter.cpp.s
 
 # target to generate assembly for a file
 src/VtkSceneWriter.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/xcat2vtk.dir/build.make CMakeFiles/xcat2vtk.dir/src/VtkSceneWriter.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/xcat2vtk_core.dir/build.make CMakeFiles/xcat2vtk_core.dir/src/VtkSceneWriter.cpp.s
 .PHONY : src/VtkSceneWriter.cpp.s
 
 src/main.o: src/main.cpp.o
@@ -225,6 +285,30 @@ src/main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/xcat2vtk.dir/build.make CMakeFiles/xcat2vtk.dir/src/main.cpp.s
 .PHONY : src/main.cpp.s
 
+tests/test_anatomy_classifier.o: tests/test_anatomy_classifier.cpp.o
+.PHONY : tests/test_anatomy_classifier.o
+
+# target to build an object file
+tests/test_anatomy_classifier.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/xcat2vtk_anatomy_tests.dir/build.make CMakeFiles/xcat2vtk_anatomy_tests.dir/tests/test_anatomy_classifier.cpp.o
+.PHONY : tests/test_anatomy_classifier.cpp.o
+
+tests/test_anatomy_classifier.i: tests/test_anatomy_classifier.cpp.i
+.PHONY : tests/test_anatomy_classifier.i
+
+# target to preprocess a source file
+tests/test_anatomy_classifier.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/xcat2vtk_anatomy_tests.dir/build.make CMakeFiles/xcat2vtk_anatomy_tests.dir/tests/test_anatomy_classifier.cpp.i
+.PHONY : tests/test_anatomy_classifier.cpp.i
+
+tests/test_anatomy_classifier.s: tests/test_anatomy_classifier.cpp.s
+.PHONY : tests/test_anatomy_classifier.s
+
+# target to generate assembly for a file
+tests/test_anatomy_classifier.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/xcat2vtk_anatomy_tests.dir/build.make CMakeFiles/xcat2vtk_anatomy_tests.dir/tests/test_anatomy_classifier.cpp.s
+.PHONY : tests/test_anatomy_classifier.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -233,7 +317,13 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
+	@echo "... test"
 	@echo "... xcat2vtk"
+	@echo "... xcat2vtk_anatomy_tests"
+	@echo "... xcat2vtk_core"
+	@echo "... src/AnatomyClassifier.o"
+	@echo "... src/AnatomyClassifier.i"
+	@echo "... src/AnatomyClassifier.s"
 	@echo "... src/BinVolumeReader.o"
 	@echo "... src/BinVolumeReader.i"
 	@echo "... src/BinVolumeReader.s"
@@ -246,6 +336,9 @@ help:
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"
+	@echo "... tests/test_anatomy_classifier.o"
+	@echo "... tests/test_anatomy_classifier.i"
+	@echo "... tests/test_anatomy_classifier.s"
 .PHONY : help
 
 

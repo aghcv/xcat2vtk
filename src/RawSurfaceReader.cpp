@@ -188,6 +188,8 @@ bool RawSurfaceReader::ReadAll(
     SurfaceData surface;
     surface.group = groupLabel;
     surface.label = currentLabel.empty() ? fallbackLabel : currentLabel;
+    surface.originalLabel = surface.label;
+    surface.sourceFile = path;
     surface.data = BuildPolyData(currentValues);
     ApplyTransform(surface.data, scale, translate);
     surfaces.push_back(surface);

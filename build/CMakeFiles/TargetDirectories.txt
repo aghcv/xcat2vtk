@@ -1,3 +1,6 @@
+/Users/aghorban/code/xcat2vtk/build/CMakeFiles/xcat2vtk_core.dir
 /Users/aghorban/code/xcat2vtk/build/CMakeFiles/xcat2vtk.dir
+/Users/aghorban/code/xcat2vtk/build/CMakeFiles/xcat2vtk_anatomy_tests.dir
+/Users/aghorban/code/xcat2vtk/build/CMakeFiles/test.dir
 /Users/aghorban/code/xcat2vtk/build/CMakeFiles/edit_cache.dir
 /Users/aghorban/code/xcat2vtk/build/CMakeFiles/rebuild_cache.dir
