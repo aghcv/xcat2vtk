@@ -584,6 +584,9 @@ AnatomyClassification AnatomyClassifier::Classify(
   ExtractTemporalPrefix(working, classification);
   ExtractLaterality(working, classification);
   ExtractPieceNumber(working, classification);
+  if (classification.laterality == "unspecified") {
+    ExtractLaterality(working, classification);
+  }
   working = CollapseUnderscores(working);
   if (working.empty()) {
     working = normalizedRaw.empty() ? "surface" : normalizedRaw;
@@ -656,6 +659,15 @@ AnatomyConfig DefaultAnatomyConfig() {
   AddAlias(config, "lad", AnatomyAlias{"left_anterior_descending_coronary_artery",
                                          "left_anterior_descending_coronary_artery",
                                          "", "", "", "artery", "left"});
+  AddAlias(config, "dia", AnatomyAlias{"diaphragm", "diaphragm"});
+  AddAlias(config, "pulmonary_arts",
+           AnatomyAlias{"pulmonary_artery", "pulmonary_artery"});
+  AddAlias(config, "llung", AnatomyAlias{"lung", "lung", "", "", "", "", "left"});
+  AddAlias(config, "rlung", AnatomyAlias{"lung", "lung", "", "", "", "", "right"});
+  AddAlias(config, "lfoot_musc",
+           AnatomyAlias{"foot_muscle", "foot_muscle", "", "", "", "muscle", "left"});
+  AddAlias(config, "rfoot_musc",
+           AnatomyAlias{"foot_muscle", "foot_muscle", "", "", "", "muscle", "right"});
   AddAlias(config, "dias_lv", AnatomyAlias{"left_ventricle",
                                             "left_ventricle",
                                             "", "", "", "heart", "left",
@@ -665,11 +677,11 @@ AnatomyConfig DefaultAnatomyConfig() {
                                            "", "", "", "heart", "left",
                                            "systole"});
 
-  AddRule(config, Rule("pulmonary_artery", 100, ".*pulmonary.*arter.*",
+  AddRule(config, Rule("pulmonary_artery", 100, ".*pulmonary.*art.*",
                        "cardiovascular", "pulmonary_circulation/arteries",
                        "thorax", "artery",
                        "01_Cardiovascular/Pulmonary_Circulation/Arteries",
-                       "high"));
+                       "high", "pulmonary_artery"));
   AddRule(config, Rule("pulmonary_vein", 100, ".*pulmonary.*vein.*",
                        "cardiovascular", "pulmonary_circulation/veins",
                        "thorax", "vein",
@@ -706,8 +718,19 @@ AnatomyConfig DefaultAnatomyConfig() {
                        "cardiovascular", "cerebrovascular/arteries",
                        "head_and_neck", "artery",
                        "01_Cardiovascular/Cerebrovascular/Arteries", "high"));
+  AddRule(config, Rule("cerebral_artery_segments", 87,
+                       ".*(middle_cerebral|posterior_cerebral|posterior_communicating|pericallosal).*",
+                       "cardiovascular", "cerebrovascular/arteries",
+                       "head_and_neck", "artery",
+                       "01_Cardiovascular/Cerebrovascular/Arteries", "high"));
   AddRule(config, Rule("cerebrovascular_vein", 84,
                        ".*(cerebral|dural|sinus|sagittal).*vein.*|.*dural.*sinus.*",
+                       "cardiovascular", "cerebrovascular/veins_and_dural_sinuses",
+                       "head_and_neck", "vein",
+                       "01_Cardiovascular/Cerebrovascular/Veins_and_Dural_Sinuses",
+                       "high"));
+  AddRule(config, Rule("dural_venous_sinuses", 87,
+                       ".*(lateral_sinus|sigmoid_sinus|straight_sinus|superior_saggital_sinus|superior_sagittal_sinus).*",
                        "cardiovascular", "cerebrovascular/veins_and_dural_sinuses",
                        "head_and_neck", "vein",
                        "01_Cardiovascular/Cerebrovascular/Veins_and_Dural_Sinuses",
@@ -726,6 +749,18 @@ AnatomyConfig DefaultAnatomyConfig() {
   AddRule(config, Rule("brainstem", 90, ".*(brainstem|midbrain|pons|medulla).*",
                        "nervous", "brainstem", "head_and_neck", "nerve",
                        "02_Nervous/Brainstem", "high"));
+  AddRule(config, Rule("brainstem_nuclei", 91,
+                       ".*(substantia_nigra|superior_colliculus|inferior_colliculus|peria.*grey|peria.*gray|cerebral_peduncle|medullary_pyramid|inferior_olive|tegmentum).*",
+                       "nervous", "brainstem", "head_and_neck", "nerve",
+                       "02_Nervous/Brainstem", "high"));
+  AddRule(config, Rule("deep_brain_structures", 89,
+                       ".*(thalamus|putamen|caudate|globus_pallidus|amygdala|hippocampus|mamillary|mammillary|fornix|internal_capsule|anterior_commissure|corpus_callosum).*",
+                       "nervous", "brain", "head_and_neck", "organ",
+                       "02_Nervous/Brain", "high"));
+  AddRule(config, Rule("cortical_brain_regions", 88,
+                       ".*(frontobasal|frontal|prefrontal|rolandic|paracentral|parietal|occipital|temporal_lobe|parieto_occipital|mediomedial|posteromedial).*",
+                       "nervous", "brain", "head_and_neck", "organ",
+                       "02_Nervous/Brain", "medium"));
   AddRule(config, Rule("cerebellum", 90, ".*cerebell.*", "nervous",
                        "cerebellum", "head_and_neck", "organ",
                        "02_Nervous/Cerebellum", "high"));
@@ -754,21 +789,37 @@ AnatomyConfig DefaultAnatomyConfig() {
                        ".*(nasal|larynx|laryngeal|pharynx|airway).*",
                        "respiratory", "upper_airway", "head_and_neck", "airway",
                        "03_Respiratory/Upper_Airway", "medium"));
+  AddRule(config, Rule("paranasal_sinus", 69, ".*sinus.*",
+                       "respiratory", "upper_airway/paranasal_sinuses",
+                       "head_and_neck", "cavity",
+                       "03_Respiratory/Upper_Airway/Paranasal_Sinuses",
+                       "medium"));
+  AddRule(config, Rule("laryngeal_soft_tissue", 76,
+                       ".*(vocal_folds|thyrohyoid_membrane).*",
+                       "respiratory", "upper_airway/larynx",
+                       "head_and_neck", "other",
+                       "03_Respiratory/Upper_Airway/Larynx", "medium",
+                       "", "musculoskeletal"));
 
   AddRule(config, Rule("oral_cavity", 80, ".*(mouth|oral|tongue|teeth|tooth).*",
                        "digestive", "oral_cavity", "head_and_neck", "cavity",
                        "04_Digestive/Oral_Cavity", "medium"));
+  AddRule(config, Rule("salivary_glands", 86,
+                       ".*(parotid|subling|submand|salivary).*",
+                       "digestive", "oral_cavity/salivary_glands",
+                       "head_and_neck", "gland",
+                       "04_Digestive/Oral_Cavity/Salivary_Glands", "high"));
   AddRule(config, Rule("esophagus", 85, ".*(esophagus|oesophagus|pharynx).*",
                        "digestive", "pharynx_and_esophagus", "thorax", "organ",
                        "04_Digestive/Pharynx_and_Esophagus", "medium"));
   AddRule(config, Rule("stomach", 90, ".*stomach.*", "digestive", "stomach",
                        "abdomen", "organ", "04_Digestive/Stomach", "high"));
   AddRule(config, Rule("small_intestine", 85,
-                       ".*(small_intestine|duodenum|jejunum|ileum).*",
+                       ".*(small_intestine|small_intest|sm_intest|duodenum|jejunum|ileum).*",
                        "digestive", "small_intestine", "abdomen", "organ",
                        "04_Digestive/Small_Intestine", "high"));
   AddRule(config, Rule("large_intestine", 85,
-                       ".*(large_intestine|colon|cecum|rectum|appendix).*",
+                       ".*(large_intestine|large_intest|large_int|trans_large_int|sigmoid|colon|cecum|rectum|appendix).*",
                        "digestive", "large_intestine", "abdomen", "organ",
                        "04_Digestive/Large_Intestine", "high"));
   AddRule(config, Rule("liver", 90, ".*liver.*", "digestive", "liver",
@@ -780,7 +831,7 @@ AnatomyConfig DefaultAnatomyConfig() {
                        "digestive", "pancreas", "abdomen", "gland",
                        "04_Digestive/Pancreas", "medium", "", "endocrine"));
 
-  AddRule(config, Rule("kidney", 90, ".*kidney.*", "urinary", "kidneys",
+  AddRule(config, Rule("kidney", 92, ".*kidney.*", "urinary", "kidneys",
                        "abdomen", "organ", "05_Urinary/Kidneys", "high"));
   AddRule(config, Rule("renal_collecting", 85,
                        ".*(renal_pelvis|calyx|calyces|collecting).*",
@@ -795,7 +846,7 @@ AnatomyConfig DefaultAnatomyConfig() {
                        "pelvis", "duct", "05_Urinary/Urethra", "high"));
 
   AddRule(config, Rule("male_reproductive", 80,
-                       ".*(prostate|testis|testicle|seminal|penis|scrotum).*",
+                       ".*(prostate|testis|testicle|seminal|penis|scrotum|epididym|vas_def|vas_deferens|ejaculatory).*",
                        "reproductive", "male", "pelvis", "organ",
                        "06_Reproductive/Male", "medium"));
   AddRule(config, Rule("female_reproductive", 80,
@@ -806,6 +857,10 @@ AnatomyConfig DefaultAnatomyConfig() {
   AddRule(config, Rule("pituitary", 90, ".*pituitary.*", "endocrine",
                        "pituitary", "head_and_neck", "gland",
                        "07_Endocrine/Pituitary", "high"));
+  AddRule(config, Rule("pineal", 90, ".*pineal.*", "endocrine",
+                       "other/pineal", "head_and_neck", "gland",
+                       "07_Endocrine/Other/Pineal", "high", "",
+                       "nervous"));
   AddRule(config, Rule("thyroid", 90, ".*thyroid.*", "endocrine", "thyroid",
                        "head_and_neck", "gland", "07_Endocrine/Thyroid",
                        "high"));
@@ -817,7 +872,7 @@ AnatomyConfig DefaultAnatomyConfig() {
                        "", "urinary"));
 
   AddRule(config, Rule("visual_system", 85,
-                       ".*(eye|retina|lens|cornea|optic).*",
+                       ".*(eye|retina|lens|cornea|sclera|optic).*",
                        "sensory", "visual_system", "head_and_neck", "organ",
                        "08_Sensory/Visual_System", "medium"));
   AddRule(config, Rule("auditory_system", 85,
@@ -848,7 +903,7 @@ AnatomyConfig DefaultAnatomyConfig() {
                        "upper_limb", "bone",
                        "09_Musculoskeletal/Skeleton/Shoulder_Girdle", "high"));
   AddRule(config, Rule("upper_limb_bone", 86,
-                       ".*(humerus|radius|ulna|carpal|metacarpal|phalange).*",
+                       ".*(humerus|radius|ulna|carpal|metacarpal|capitate|hamate|lunate|pisform|pisiform|scaphoid|trapezium|trapezoid|triquetrum).*",
                        "musculoskeletal", "skeleton/upper_limb", "upper_limb",
                        "bone", "09_Musculoskeletal/Skeleton/Upper_Limb",
                        "high"));
@@ -856,10 +911,28 @@ AnatomyConfig DefaultAnatomyConfig() {
                        "musculoskeletal", "skeleton/pelvis", "pelvis", "bone",
                        "09_Musculoskeletal/Skeleton/Pelvis", "high"));
   AddRule(config, Rule("lower_limb_bone", 86,
-                       ".*(femur|tibia|fibula|patella|tarsal|metatarsal|calcaneus).*",
+                       ".*(femur|tibia|fibula|patella|tarsal|metatarsal|calcaneus|talus|cuboid|navicular).*",
                        "musculoskeletal", "skeleton/lower_limb", "lower_limb",
                        "bone", "09_Musculoskeletal/Skeleton/Lower_Limb",
                        "high"));
+  AddRule(config, Rule("phalanges", 86, ".*phalanx.*|.*phalange.*",
+                       "musculoskeletal", "skeleton/phalanges", "unspecified",
+                       "bone", "09_Musculoskeletal/Skeleton/Phalanges",
+                       "medium", "phalanx"));
+  AddRule(config, Rule("hand_digits", 84, ".*(thumb|pinky|ring|middle).*",
+                       "musculoskeletal", "skeleton/upper_limb", "upper_limb",
+                       "bone", "09_Musculoskeletal/Skeleton/Upper_Limb",
+                       "medium"));
+  AddRule(config, Rule("diaphragm", 82, ".*diaphragm.*|^dia$",
+                       "musculoskeletal", "skeletal_muscle", "thorax",
+                       "muscle", "09_Musculoskeletal/Skeletal_Muscle",
+                       "medium", "diaphragm", "respiratory"));
+  AddRule(config, Rule("lower_limb_soft_tissue", 72,
+                       ".*(leg|foot_muscle).*",
+                       "musculoskeletal", "skeletal_muscle/lower_limb",
+                       "lower_limb", "muscle",
+                       "09_Musculoskeletal/Skeletal_Muscle/Lower_Limb",
+                       "medium"));
   AddRule(config, Rule("intervertebral_disc", 85, ".*disc.*",
                        "musculoskeletal", "intervertebral_discs", "spine",
                        "cartilage", "09_Musculoskeletal/Intervertebral_Discs",
@@ -873,10 +946,10 @@ AnatomyConfig DefaultAnatomyConfig() {
   AddRule(config, Rule("tendon", 75, ".*tendon.*", "musculoskeletal",
                        "tendons", "unspecified", "tendon",
                        "09_Musculoskeletal/Tendons", "medium"));
-  AddRule(config, Rule("muscle", 70, ".*(muscle|musculus).*",
+  AddRule(config, Rule("muscle", 70, ".*(muscle|musculus|musc).*",
                        "musculoskeletal", "skeletal_muscle", "unspecified",
                        "muscle", "09_Musculoskeletal/Skeletal_Muscle",
-                       "medium"));
+                       "medium", "skeletal_muscle"));
   AddRule(config, Rule("generic_bone", 25, ".*bone.*", "musculoskeletal",
                        "skeleton", "unspecified", "bone",
                        "09_Musculoskeletal/Skeleton", "medium"));
@@ -1015,10 +1088,35 @@ bool LoadDefaultOrConfiguredAnatomyConfig(
     return ValidateAnatomyConfig(config, error);
   }
 
-  const std::filesystem::path repoConfig = "config/anatomy_hierarchy.yml";
-  if (std::filesystem::exists(repoConfig)) {
+  const std::filesystem::path relativeConfig =
+      std::filesystem::path("config") / "anatomy_hierarchy.yml";
+
+  std::vector<std::filesystem::path> configCandidates;
+  configCandidates.push_back(relativeConfig);
+
+  std::error_code ec;
+  std::filesystem::path cwd = std::filesystem::current_path(ec);
+  if (!ec) {
+    std::filesystem::path probe = cwd;
+    for (int i = 0; i < 8; ++i) {
+      configCandidates.push_back(probe / relativeConfig);
+      if (!probe.has_parent_path()) {
+        break;
+      }
+      const std::filesystem::path parent = probe.parent_path();
+      if (parent == probe) {
+        break;
+      }
+      probe = parent;
+    }
+  }
+
+  for (const auto &candidate : configCandidates) {
+    if (!std::filesystem::exists(candidate)) {
+      continue;
+    }
     config = BaseAnatomyConfig();
-    if (!LoadAnatomyConfigFile(repoConfig.string(), config, error)) {
+    if (!LoadAnatomyConfigFile(candidate.string(), config, error)) {
       return false;
     }
     return ValidateAnatomyConfig(config, error);

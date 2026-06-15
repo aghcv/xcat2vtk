@@ -188,6 +188,128 @@ void TestClassificationExamples() {
   Require(c.hierarchyPath == "02_Nervous/Spinal_Cord",
           "spinal cord hierarchy");
 
+  c = classifier.Classify("left_pulmonary_arts");
+  Require(c.laterality == "left", "left_pulmonary_arts laterality");
+  Require(c.canonicalName == "pulmonary_artery",
+          "left_pulmonary_arts canonical name");
+  Require(c.hierarchyPath == "01_Cardiovascular/Pulmonary_Circulation/Arteries",
+          "left_pulmonary_arts hierarchy");
+
+  c = classifier.Classify("lateral_sinus_right");
+  Require(c.laterality == "right", "lateral_sinus_right laterality");
+  Require(c.hierarchyPath ==
+              "01_Cardiovascular/Cerebrovascular/Veins_and_Dural_Sinuses",
+          "lateral_sinus_right hierarchy");
+
+  c = classifier.Classify("middle_cerebral_M2_left");
+  Require(c.laterality == "left", "middle_cerebral_M2_left laterality");
+  Require(c.pieceNumber == "2", "middle_cerebral_M2_left piece");
+  Require(c.hierarchyPath == "01_Cardiovascular/Cerebrovascular/Arteries",
+          "middle cerebral artery hierarchy");
+
+  c = classifier.Classify("lateral_occipital_left");
+  Require(c.laterality == "left", "lateral_occipital_left laterality");
+  Require(c.hierarchyPath == "02_Nervous/Brain",
+          "lateral_occipital_left hierarchy");
+
+  c = classifier.Classify("Occipital_right1");
+  Require(c.laterality == "right", "Occipital_right1 laterality after piece");
+  Require(c.pieceNumber == "1", "Occipital_right1 piece number");
+  Require(c.hierarchyPath == "02_Nervous/Brain",
+          "Occipital_right1 hierarchy");
+
+  c = classifier.Classify("Mamillary_bodies");
+  Require(c.hierarchyPath == "02_Nervous/Brain",
+          "Mamillary_bodies hierarchy");
+
+  c = classifier.Classify("Substantia_nigra");
+  Require(c.hierarchyPath == "02_Nervous/Brainstem",
+          "Substantia_nigra hierarchy");
+
+  c = classifier.Classify("Pineal_gland");
+  Require(c.system == "endocrine", "Pineal_gland endocrine system");
+  Require(c.secondarySystems == "nervous", "Pineal_gland secondary nervous");
+
+  c = classifier.Classify("left_dia");
+  Require(c.laterality == "left", "left_dia laterality");
+  Require(c.canonicalName == "diaphragm", "left_dia canonical name");
+  Require(c.hierarchyPath == "09_Musculoskeletal/Skeletal_Muscle",
+          "left_dia hierarchy");
+  Require(c.secondarySystems == "respiratory", "left_dia secondary respiratory");
+
+  c = classifier.Classify("llung");
+  Require(c.laterality == "left", "llung laterality");
+  Require(c.hierarchyPath == "03_Respiratory/Lungs", "llung hierarchy");
+
+  c = classifier.Classify("sinus");
+  Require(c.hierarchyPath == "03_Respiratory/Upper_Airway/Paranasal_Sinuses",
+          "bare sinus hierarchy");
+
+  c = classifier.Classify("small_intest");
+  Require(c.hierarchyPath == "04_Digestive/Small_Intestine",
+          "small_intest hierarchy");
+
+  c = classifier.Classify("trans_large_int");
+  Require(c.hierarchyPath == "04_Digestive/Large_Intestine",
+          "trans_large_int hierarchy");
+
+  c = classifier.Classify("r_epididymus");
+  Require(c.laterality == "right", "r_epididymus laterality");
+  Require(c.hierarchyPath == "06_Reproductive/Male",
+          "r_epididymus hierarchy");
+
+  c = classifier.Classify("r_vas_def");
+  Require(c.hierarchyPath == "06_Reproductive/Male",
+          "r_vas_def hierarchy");
+
+  c = classifier.Classify("r_parotid");
+  Require(c.laterality == "right", "r_parotid laterality");
+  Require(c.hierarchyPath == "04_Digestive/Oral_Cavity/Salivary_Glands",
+          "r_parotid hierarchy");
+
+  c = classifier.Classify("r_sclera");
+  Require(c.hierarchyPath == "08_Sensory/Visual_System",
+          "r_sclera hierarchy");
+
+  c = classifier.Classify("phalanx1512");
+  Require(c.pieceNumber == "1512", "phalanx1512 piece number");
+  Require(c.canonicalName == "phalanx", "phalanx1512 canonical name");
+  Require(c.hierarchyPath == "09_Musculoskeletal/Skeleton/Phalanges",
+          "phalanx1512 hierarchy");
+
+  c = classifier.Classify("r_capitate");
+  Require(c.hierarchyPath == "09_Musculoskeletal/Skeleton/Upper_Limb",
+          "r_capitate hierarchy");
+
+  c = classifier.Classify("r_talus");
+  Require(c.hierarchyPath == "09_Musculoskeletal/Skeleton/Lower_Limb",
+          "r_talus hierarchy");
+
+  c = classifier.Classify("lfoot_musc");
+  Require(c.laterality == "left", "lfoot_musc laterality");
+  Require(c.hierarchyPath == "09_Musculoskeletal/Skeletal_Muscle/Lower_Limb",
+          "lfoot_musc hierarchy");
+
+  c = classifier.Classify("leg_right");
+  Require(c.laterality == "right", "leg_right laterality");
+  Require(c.hierarchyPath == "09_Musculoskeletal/Skeletal_Muscle/Lower_Limb",
+          "leg_right hierarchy");
+
+  c = classifier.Classify("musc1071");
+  Require(c.canonicalName == "skeletal_muscle", "musc1071 canonical name");
+  Require(c.pieceNumber == "1071", "musc1071 piece number");
+  Require(c.hierarchyPath == "09_Musculoskeletal/Skeletal_Muscle",
+          "musc1071 hierarchy");
+
+  c = classifier.Classify("thumb_l");
+  Require(c.laterality == "left", "thumb_l laterality");
+  Require(c.hierarchyPath == "09_Musculoskeletal/Skeleton/Upper_Limb",
+          "thumb_l hierarchy");
+
+  c = classifier.Classify("vocal_folds");
+  Require(c.hierarchyPath == "03_Respiratory/Upper_Airway/Larynx",
+          "vocal_folds hierarchy");
+
   c = classifier.Classify("unknown_structure_xyz");
   Require(c.unclassified, "unknown label fallback");
   Require(c.hierarchyPath == "99_Unclassified", "unknown hierarchy");

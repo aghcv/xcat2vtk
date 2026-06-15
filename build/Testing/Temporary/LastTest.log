@@ -1,21 +1,21 @@
-Start testing: Jun 14 12:57 EDT
+Start testing: Jun 14 14:27 EDT
 ----------------------------------------------------------
 1/1 Testing: anatomy_classifier
 1/1 Test: anatomy_classifier
 Command: "/Users/aghorban/code/xcat2vtk/build/xcat2vtk_anatomy_tests"
 Directory: /Users/aghorban/code/xcat2vtk/build
-"anatomy_classifier" start time: Jun 14 12:57 EDT
+"anatomy_classifier" start time: Jun 14 14:27 EDT
 Output:
 ----------------------------------------------------------
 Warning: unclassified anatomy label: unknown_structure_xyz
 Warning: unclassified anatomy label: unknown_structure_xyz
 anatomy tests passed
 <end of output>
-Test time =   0.97 sec
+Test time =   2.39 sec
 ----------------------------------------------------------
 Test Passed.
-"anatomy_classifier" end time: Jun 14 12:57 EDT
-"anatomy_classifier" time elapsed: 00:00:00
+"anatomy_classifier" end time: Jun 14 14:27 EDT
+"anatomy_classifier" time elapsed: 00:00:02
 ----------------------------------------------------------
 
-End testing: Jun 14 12:57 EDT
+End testing: Jun 14 14:27 EDT
