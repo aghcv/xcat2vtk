@@ -955,6 +955,9 @@ CMakeFiles/xcat2vtk_core.dir/src/VtkSceneWriter.cpp.o: \
   /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.5/vtkCompositeDataSet.h \
   /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.5/vtkCompositeDataSet.txx \
   /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.5/vtkCompositeDataIterator.h \
+  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.5/vtkCellData.h \
+  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.5/vtkDataSetAttributes.h \
+  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.5/vtkDataSetAttributesFieldList.h \
   /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.5/vtkFieldData.h \
   /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.5/vtkInformation.h \
   /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.5/vtkMultiBlockDataSet.h \

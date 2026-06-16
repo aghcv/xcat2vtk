@@ -533,6 +533,268 @@ std::string CsvEscape(const std::string &value) {
   out += "\"";
   return out;
 }
+
+std::string NormalizeCsvHeader(const std::string &value) {
+  std::string out;
+  out.reserve(value.size());
+  for (const char ch : value) {
+    if (std::isalnum(static_cast<unsigned char>(ch))) {
+      out.push_back(static_cast<char>(
+          std::tolower(static_cast<unsigned char>(ch))));
+    }
+  }
+  return out;
+}
+
+std::string NormalizeReviewAction(const std::string &value) {
+  std::string out = NormalizeAnatomyLabelText(Trim(value));
+  std::replace(out.begin(), out.end(), '-', '_');
+  return out;
+}
+
+bool ShouldLoadOverrideRowForAction(const std::string &reviewAction) {
+  const std::string action = NormalizeReviewAction(reviewAction);
+  if (action.empty()) {
+    return true;
+  }
+  return action == "corrected" || action == "override" ||
+         action == "manual_override" || action == "approved" ||
+         action == "accepted" || action == "active";
+}
+
+const std::vector<std::string> &AnatomyAtlasHeader() {
+  static const std::vector<std::string> header = {
+      "original_block_index",
+      "original_name",
+      "normalized_name",
+      "canonical_name",
+      "system",
+      "subsystem",
+      "anatomical_region",
+      "structure_type",
+      "laterality",
+      "piece_number",
+      "temporal_phase",
+      "hierarchy_path",
+      "classification_confidence",
+      "classification_rule",
+      "source_file",
+      "review_action",
+      "review_confidence",
+      "review_reason",
+      "example_source_file",
+      "example_original_block_index",
+      "first_seen_run_id",
+      "notes",
+  };
+  return header;
+}
+
+bool WriteCsvValues(std::ostream &out, const std::vector<std::string> &values) {
+  for (size_t i = 0; i < values.size(); ++i) {
+    if (i > 0) {
+      out << ',';
+    }
+    out << CsvEscape(values[i]);
+  }
+  out << '\n';
+  return static_cast<bool>(out);
+}
+
+std::string AtlasColumnValue(const std::string &column,
+                             const AnatomyClassification &classification,
+                             const std::string &runId) {
+  const std::string key = NormalizeCsvHeader(column);
+  if (key == "originalblockindex") {
+    return std::string();
+  }
+  if (key == "originalname") {
+    return classification.originalName;
+  }
+  if (key == "normalizedname") {
+    return classification.normalizedName;
+  }
+  if (key == "canonicalname") {
+    return classification.canonicalName;
+  }
+  if (key == "system") {
+    return classification.system;
+  }
+  if (key == "subsystem") {
+    return classification.subsystem;
+  }
+  if (key == "anatomicalregion") {
+    return classification.anatomicalRegion;
+  }
+  if (key == "structuretype") {
+    return classification.structureType;
+  }
+  if (key == "laterality") {
+    return classification.laterality;
+  }
+  if (key == "piecenumber") {
+    return classification.pieceNumber;
+  }
+  if (key == "temporalphase") {
+    return classification.temporalPhase;
+  }
+  if (key == "hierarchypath") {
+    return classification.hierarchyPath;
+  }
+  if (key == "classificationconfidence") {
+    return classification.confidence;
+  }
+  if (key == "classificationrule") {
+    return classification.classificationSource;
+  }
+  if (key == "sourcefile") {
+    return std::string();
+  }
+  if (key == "reviewaction") {
+    return "needs_review";
+  }
+  if (key == "reviewconfidence") {
+    return std::string();
+  }
+  if (key == "reviewreason") {
+    return "Captured unclassified label from an anatomy atlas run; fill the "
+           "classification columns and set review_action=corrected to activate.";
+  }
+  if (key == "examplesourcefile") {
+    return classification.sourceFile;
+  }
+  if (key == "exampleoriginalblockindex") {
+    return classification.originalBlockIndex >= 0
+               ? std::to_string(classification.originalBlockIndex)
+               : std::string();
+  }
+  if (key == "firstseenrunid") {
+    return runId;
+  }
+  return std::string();
+}
+
+bool ParseCsvRecord(const std::string &line,
+                    std::vector<std::string> &values,
+                    std::string &error) {
+  values.clear();
+  std::string current;
+  bool inQuotes = false;
+  for (size_t i = 0; i < line.size(); ++i) {
+    const char ch = line[i];
+    if (ch == '"') {
+      if (inQuotes && i + 1 < line.size() && line[i + 1] == '"') {
+        current.push_back('"');
+        ++i;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+    if (ch == ',' && !inQuotes) {
+      values.push_back(current);
+      current.clear();
+      continue;
+    }
+    current.push_back(ch);
+  }
+  if (inQuotes) {
+    error = "Unclosed quoted CSV field.";
+    return false;
+  }
+  values.push_back(current);
+  return true;
+}
+
+std::map<std::string, size_t> BuildCsvHeaderMap(
+    const std::vector<std::string> &header) {
+  std::map<std::string, size_t> columns;
+  for (size_t i = 0; i < header.size(); ++i) {
+    const std::string key = NormalizeCsvHeader(header[i]);
+    if (!key.empty()) {
+      columns[key] = i;
+    }
+  }
+  return columns;
+}
+
+bool HasColumn(const std::map<std::string, size_t> &columns,
+               const std::vector<std::string> &aliases) {
+  for (const std::string &alias : aliases) {
+    if (columns.find(NormalizeCsvHeader(alias)) != columns.end()) {
+      return true;
+    }
+  }
+  return false;
+}
+
+std::string CsvColumnValue(const std::map<std::string, size_t> &columns,
+                           const std::vector<std::string> &aliases,
+                           const std::vector<std::string> &row) {
+  for (const std::string &alias : aliases) {
+    const auto found = columns.find(NormalizeCsvHeader(alias));
+    if (found == columns.end() || found->second >= row.size()) {
+      continue;
+    }
+    return Trim(row[found->second]);
+  }
+  return std::string();
+}
+
+bool ParseOptionalCsvInt(const std::string &value,
+                         int &out,
+                         std::string &error) {
+  const std::string trimmed = Trim(value);
+  if (trimmed.empty()) {
+    return false;
+  }
+  try {
+    size_t consumed = 0;
+    const int parsed = std::stoi(trimmed, &consumed);
+    if (consumed != trimmed.size()) {
+      error = "Invalid integer value in anatomy override CSV: " + value;
+      return false;
+    }
+    out = parsed;
+    return true;
+  } catch (const std::exception &) {
+    error = "Invalid integer value in anatomy override CSV: " + value;
+    return false;
+  }
+}
+
+void RefreshDerivedClassificationFields(
+    const AnatomyConfig &config,
+    AnatomyClassification &classification,
+    bool overrideProvidedHierarchyPath) {
+  if (classification.system.empty() ||
+      classification.system == "unclassified" ||
+      (overrideProvidedHierarchyPath &&
+       classification.hierarchyPath == "99_Unclassified")) {
+    classification.unclassified = true;
+    classification.system = "unclassified";
+    classification.subsystem = classification.subsystem.empty()
+                                   ? "unclassified"
+                                   : classification.subsystem;
+    if (!overrideProvidedHierarchyPath) {
+      classification.hierarchyPath = "99_Unclassified";
+    }
+    if (classification.confidence.empty()) {
+      classification.confidence = "unclassified";
+    }
+  } else {
+    classification.unclassified = false;
+    if (!overrideProvidedHierarchyPath) {
+      classification.hierarchyPath = DeriveHierarchyPath(config, classification);
+    }
+    if (classification.confidence.empty() ||
+        classification.confidence == "unclassified") {
+      classification.confidence = "manual";
+    }
+  }
+  classification.displayName = BuildDisplayName(classification);
+  classification.canonicalIdentifier = BuildCanonicalIdentifier(classification);
+}
 } // namespace
 
 void AnatomySummary::Add(const AnatomyClassification &classification) {
@@ -542,6 +804,7 @@ void AnatomySummary::Add(const AnatomyClassification &classification) {
   if (classification.unclassified) {
     ++unclassifiedBlocks;
     unclassifiedLabels.push_back(classification.originalName);
+    unclassifiedClassifications.push_back(classification);
   } else {
     ++classifiedBlocks;
   }
@@ -801,7 +1064,14 @@ AnatomyConfig DefaultAnatomyConfig() {
                        "03_Respiratory/Upper_Airway/Larynx", "medium",
                        "", "musculoskeletal"));
 
-  AddRule(config, Rule("oral_cavity", 80, ".*(mouth|oral|tongue|teeth|tooth).*",
+  AddRule(config, Rule("teeth", 87, ".*(teeth|tooth).*",
+                       "digestive", "oral_cavity", "head_and_neck", "bone",
+                       "04_Digestive/Oral_Cavity", "high", "teeth"));
+  AddRule(config, Rule("tongue", 87, ".*tongue.*",
+                       "digestive", "oral_cavity", "head_and_neck", "organ",
+                       "04_Digestive/Oral_Cavity", "high", "",
+                       "musculoskeletal"));
+  AddRule(config, Rule("oral_cavity", 80, ".*(mouth|oral).*",
                        "digestive", "oral_cavity", "head_and_neck", "cavity",
                        "04_Digestive/Oral_Cavity", "medium"));
   AddRule(config, Rule("salivary_glands", 86,
@@ -1126,6 +1396,274 @@ bool LoadDefaultOrConfiguredAnatomyConfig(
   return ValidateAnatomyConfig(config, error);
 }
 
+bool LoadAnatomyReportOverrides(
+    const std::string &path,
+    AnatomyReportOverrides &overrides,
+    std::string &error) {
+  overrides = AnatomyReportOverrides{};
+  std::ifstream file(path);
+  if (!file.is_open()) {
+    error = "Cannot open anatomy override CSV: " + path;
+    return false;
+  }
+
+  std::string rawLine;
+  int lineNumber = 0;
+  std::vector<std::string> header;
+  while (std::getline(file, rawLine)) {
+    ++lineNumber;
+    if (Trim(rawLine).empty()) {
+      continue;
+    }
+    if (!ParseCsvRecord(rawLine, header, error)) {
+      error = "Invalid anatomy override CSV header in " + path + ": " + error;
+      return false;
+    }
+    break;
+  }
+  if (header.empty()) {
+    error = "Anatomy override CSV is empty: " + path;
+    return false;
+  }
+
+  const std::map<std::string, size_t> columns = BuildCsvHeaderMap(header);
+  const std::vector<std::string> originalIndexColumns = {
+      "original_block_index", "OriginalBlockIndex"};
+  const std::vector<std::string> originalNameColumns = {
+      "original_name", "OriginalBlockName"};
+  if (!HasColumn(columns, originalNameColumns)) {
+    error = "Anatomy override CSV must include original_name or OriginalBlockName.";
+    return false;
+  }
+
+  overrides.columns.normalizedName =
+      HasColumn(columns, {"normalized_name", "NormalizedAnatomyName"});
+  overrides.columns.canonicalName =
+      HasColumn(columns, {"canonical_name", "CanonicalAnatomyName"});
+  overrides.columns.system =
+      HasColumn(columns, {"system", "AnatomicalSystem"});
+  overrides.columns.subsystem =
+      HasColumn(columns, {"subsystem", "AnatomicalSubsystem"});
+  overrides.columns.anatomicalRegion =
+      HasColumn(columns, {"anatomical_region", "AnatomicalRegion"});
+  overrides.columns.structureType =
+      HasColumn(columns, {"structure_type", "StructureType"});
+  overrides.columns.laterality =
+      HasColumn(columns, {"laterality", "Laterality"});
+  overrides.columns.pieceNumber =
+      HasColumn(columns, {"piece_number", "PieceNumber"});
+  overrides.columns.temporalPhase =
+      HasColumn(columns, {"temporal_phase", "TemporalPhase"});
+  overrides.columns.hierarchyPath =
+      HasColumn(columns, {"hierarchy_path", "HierarchyPath"});
+  overrides.columns.confidence =
+      HasColumn(columns, {"classification_confidence",
+                          "ClassificationConfidence"});
+  overrides.columns.classificationSource =
+      HasColumn(columns, {"classification_rule", "ClassificationRule"});
+  overrides.columns.sourceFile =
+      HasColumn(columns, {"source_file", "SourceFile"});
+  const std::vector<std::string> reviewActionColumns = {
+      "review_action", "ReviewAction", "atlas_status", "AtlasStatus"};
+
+  std::vector<std::string> row;
+  while (std::getline(file, rawLine)) {
+    ++lineNumber;
+    if (Trim(rawLine).empty()) {
+      continue;
+    }
+    if (!ParseCsvRecord(rawLine, row, error)) {
+      error = "Invalid anatomy override CSV line " +
+              std::to_string(lineNumber) + " in " + path + ": " + error;
+      return false;
+    }
+
+    AnatomyClassification classification;
+    classification.originalName =
+        CsvColumnValue(columns, originalNameColumns, row);
+    if (classification.originalName.empty()) {
+      error = "Anatomy override CSV line " + std::to_string(lineNumber) +
+              " is missing original_name.";
+      return false;
+    }
+
+    const std::string reviewAction =
+        CsvColumnValue(columns, reviewActionColumns, row);
+    if (!ShouldLoadOverrideRowForAction(reviewAction)) {
+      ++overrides.skippedRows;
+      continue;
+    }
+
+    bool hasOriginalIndex = false;
+    const std::string originalIndexText =
+        CsvColumnValue(columns, originalIndexColumns, row);
+    if (!originalIndexText.empty()) {
+      hasOriginalIndex = ParseOptionalCsvInt(originalIndexText,
+                                             classification.originalBlockIndex,
+                                             error);
+      if (!hasOriginalIndex) {
+        error = "Anatomy override CSV line " + std::to_string(lineNumber) +
+                ": " + error;
+        return false;
+      }
+    }
+
+    if (overrides.columns.normalizedName) {
+      classification.normalizedName =
+          CsvColumnValue(columns, {"normalized_name", "NormalizedAnatomyName"}, row);
+    }
+    if (overrides.columns.canonicalName) {
+      classification.canonicalName =
+          CsvColumnValue(columns, {"canonical_name", "CanonicalAnatomyName"}, row);
+    }
+    if (overrides.columns.system) {
+      classification.system =
+          CsvColumnValue(columns, {"system", "AnatomicalSystem"}, row);
+    }
+    if (overrides.columns.subsystem) {
+      classification.subsystem =
+          CsvColumnValue(columns, {"subsystem", "AnatomicalSubsystem"}, row);
+    }
+    if (overrides.columns.anatomicalRegion) {
+      classification.anatomicalRegion =
+          CsvColumnValue(columns, {"anatomical_region", "AnatomicalRegion"}, row);
+    }
+    if (overrides.columns.structureType) {
+      classification.structureType =
+          CsvColumnValue(columns, {"structure_type", "StructureType"}, row);
+    }
+    if (overrides.columns.laterality) {
+      classification.laterality =
+          CsvColumnValue(columns, {"laterality", "Laterality"}, row);
+    }
+    if (overrides.columns.pieceNumber) {
+      classification.pieceNumber =
+          CsvColumnValue(columns, {"piece_number", "PieceNumber"}, row);
+    }
+    if (overrides.columns.temporalPhase) {
+      classification.temporalPhase =
+          CsvColumnValue(columns, {"temporal_phase", "TemporalPhase"}, row);
+    }
+    if (overrides.columns.hierarchyPath) {
+      classification.hierarchyPath =
+          CsvColumnValue(columns, {"hierarchy_path", "HierarchyPath"}, row);
+    }
+    if (overrides.columns.confidence) {
+      classification.confidence =
+          CsvColumnValue(columns,
+                         {"classification_confidence",
+                          "ClassificationConfidence"},
+                         row);
+    }
+    if (overrides.columns.classificationSource) {
+      classification.classificationSource =
+          CsvColumnValue(columns, {"classification_rule", "ClassificationRule"}, row);
+    }
+    if (overrides.columns.sourceFile) {
+      classification.sourceFile =
+          CsvColumnValue(columns, {"source_file", "SourceFile"}, row);
+    }
+
+    if (hasOriginalIndex) {
+      if (!classification.sourceFile.empty()) {
+        overrides.bySourceIndexAndName[{classification.sourceFile,
+                                        classification.originalBlockIndex,
+                                        classification.originalName}] =
+            classification;
+      }
+      overrides.byIndexAndName[{classification.originalBlockIndex,
+                                classification.originalName}] = classification;
+    } else {
+      overrides.byOriginalName[classification.originalName] = classification;
+    }
+    ++overrides.rowCount;
+  }
+
+  return true;
+}
+
+bool ApplyAnatomyReportOverride(
+    const AnatomyConfig &config,
+    const AnatomyReportOverrides &overrides,
+    AnatomyClassification &classification) {
+  const AnatomyClassification *overrideClassification = nullptr;
+  const auto sourceExact = overrides.bySourceIndexAndName.find(
+      {classification.sourceFile,
+       classification.originalBlockIndex,
+       classification.originalName});
+  if (sourceExact != overrides.bySourceIndexAndName.end()) {
+    overrideClassification = &sourceExact->second;
+  }
+
+  const auto exact = overrides.byIndexAndName.find(
+      {classification.originalBlockIndex, classification.originalName});
+  if (!overrideClassification && exact != overrides.byIndexAndName.end()) {
+    overrideClassification = &exact->second;
+  }
+
+  if (!overrideClassification) {
+    const auto byName = overrides.byOriginalName.find(classification.originalName);
+    if (byName != overrides.byOriginalName.end()) {
+      overrideClassification = &byName->second;
+    }
+  }
+
+  if (!overrideClassification) {
+    return false;
+  }
+
+  const AnatomyReportOverrideColumns &columns = overrides.columns;
+  if (columns.normalizedName) {
+    classification.normalizedName = overrideClassification->normalizedName;
+  }
+  if (columns.canonicalName) {
+    classification.canonicalName = overrideClassification->canonicalName;
+  }
+  if (columns.system) {
+    classification.system = overrideClassification->system;
+  }
+  if (columns.subsystem) {
+    classification.subsystem = overrideClassification->subsystem;
+  }
+  if (columns.anatomicalRegion) {
+    classification.anatomicalRegion = overrideClassification->anatomicalRegion;
+  }
+  if (columns.structureType) {
+    classification.structureType = overrideClassification->structureType;
+  }
+  if (columns.laterality) {
+    classification.laterality = overrideClassification->laterality;
+  }
+  if (columns.pieceNumber) {
+    classification.pieceNumber = overrideClassification->pieceNumber;
+  }
+  if (columns.temporalPhase) {
+    classification.temporalPhase = overrideClassification->temporalPhase;
+  }
+  if (columns.hierarchyPath) {
+    classification.hierarchyPath = overrideClassification->hierarchyPath;
+  }
+  if (columns.confidence) {
+    classification.confidence = overrideClassification->confidence;
+  }
+  if (columns.sourceFile) {
+    classification.sourceFile = overrideClassification->sourceFile;
+  }
+
+  if (columns.classificationSource &&
+      !overrideClassification->classificationSource.empty()) {
+    classification.classificationSource =
+        "report_override:" + overrideClassification->classificationSource;
+  } else {
+    classification.classificationSource = "report_override";
+  }
+
+  RefreshDerivedClassificationFields(config,
+                                     classification,
+                                     columns.hierarchyPath);
+  return true;
+}
+
 bool ValidateAnatomyConfig(const AnatomyConfig &config, std::string &error) {
   for (const AnatomyRule &rule : config.rules) {
     if (rule.pattern.empty()) {
@@ -1208,4 +1746,130 @@ bool WriteAnatomyReportRow(std::ostream &out,
       << CsvEscape(classification.classificationSource) << ','
       << CsvEscape(classification.sourceFile) << '\n';
   return static_cast<bool>(out);
+}
+
+bool UpdateAnatomyAtlasFile(
+    const std::string &path,
+    const std::vector<AnatomyClassification> &unclassifiedClassifications,
+    const std::string &runId,
+    size_t &appendedRows,
+    std::string &error) {
+  appendedRows = 0;
+  if (path.empty()) {
+    error = "Missing anatomy atlas path.";
+    return false;
+  }
+
+  std::vector<std::string> header;
+  std::set<std::string> existingNames;
+  const std::filesystem::path atlasPath(path);
+  if (std::filesystem::exists(atlasPath)) {
+    std::ifstream in(atlasPath);
+    if (!in.is_open()) {
+      error = "Cannot read anatomy atlas CSV: " + path;
+      return false;
+    }
+
+    std::string rawLine;
+    int lineNumber = 0;
+    while (std::getline(in, rawLine)) {
+      ++lineNumber;
+      if (Trim(rawLine).empty()) {
+        continue;
+      }
+      if (!ParseCsvRecord(rawLine, header, error)) {
+        error = "Invalid anatomy atlas CSV header in " + path + ": " + error;
+        return false;
+      }
+      break;
+    }
+
+    if (header.empty()) {
+      header = AnatomyAtlasHeader();
+    }
+
+    const std::map<std::string, size_t> columns = BuildCsvHeaderMap(header);
+    if (!HasColumn(columns, {"original_name", "OriginalBlockName"})) {
+      error = "Anatomy atlas CSV must include original_name.";
+      return false;
+    }
+    if (!HasColumn(columns, {"review_action", "ReviewAction", "atlas_status",
+                             "AtlasStatus"})) {
+      error = "Anatomy atlas CSV must include review_action so pending rows "
+              "are not applied as overrides.";
+      return false;
+    }
+
+    std::vector<std::string> row;
+    while (std::getline(in, rawLine)) {
+      ++lineNumber;
+      if (Trim(rawLine).empty()) {
+        continue;
+      }
+      if (!ParseCsvRecord(rawLine, row, error)) {
+        error = "Invalid anatomy atlas CSV line " +
+                std::to_string(lineNumber) + " in " + path + ": " + error;
+        return false;
+      }
+      const std::string originalName =
+          CsvColumnValue(columns, {"original_name", "OriginalBlockName"}, row);
+      if (!originalName.empty()) {
+        existingNames.insert(NormalizeAnatomyLabelText(originalName));
+      }
+    }
+  } else {
+    header = AnatomyAtlasHeader();
+  }
+
+  const std::filesystem::path parent = atlasPath.parent_path();
+  if (!parent.empty()) {
+    std::error_code fsError;
+    std::filesystem::create_directories(parent, fsError);
+    if (fsError) {
+      error = "Failed to create anatomy atlas directory: " + parent.string();
+      return false;
+    }
+  }
+
+  const bool needsHeader = !std::filesystem::exists(atlasPath) ||
+                           std::filesystem::file_size(atlasPath) == 0;
+  std::ofstream out(atlasPath, std::ios::app);
+  if (!out.is_open()) {
+    error = "Cannot write anatomy atlas CSV: " + path;
+    return false;
+  }
+
+  if (needsHeader) {
+    if (!WriteCsvValues(out, header)) {
+      error = "Failed to write anatomy atlas header: " + path;
+      return false;
+    }
+  }
+
+  for (const AnatomyClassification &classification :
+       unclassifiedClassifications) {
+    if (classification.originalName.empty()) {
+      continue;
+    }
+    const std::string key =
+        NormalizeAnatomyLabelText(classification.originalName);
+    if (key.empty() || existingNames.find(key) != existingNames.end()) {
+      continue;
+    }
+
+    std::vector<std::string> values;
+    values.reserve(header.size());
+    for (const std::string &column : header) {
+      values.push_back(AtlasColumnValue(column, classification, runId));
+    }
+    if (!WriteCsvValues(out, values)) {
+      error = "Failed to append anatomy atlas row for " +
+              classification.originalName;
+      return false;
+    }
+    existingNames.insert(key);
+    ++appendedRows;
+  }
+
+  return true;
 }

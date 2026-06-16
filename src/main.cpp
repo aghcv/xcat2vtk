@@ -54,8 +54,63 @@ struct Options {
   bool strictAnatomy = false;
   std::string anatomyConfigPath;
   std::string anatomyReportPath;
+  bool anatomyReport = false;
+  std::string anatomyOverridesPath;
+  std::string anatomyAtlasPath;
+  bool anatomyAtlas = false;
   bool showHelp = false;
 };
+
+std::filesystem::path ResolveDefaultAnatomyAtlasPath() {
+  const std::filesystem::path relativeAtlas = "config/anatomy_atlas.csv";
+  std::vector<std::filesystem::path> candidates = {relativeAtlas};
+
+  std::error_code ec;
+  std::filesystem::path cwd = std::filesystem::current_path(ec);
+  if (!ec) {
+    std::filesystem::path probe = cwd;
+    for (int i = 0; i < 8; ++i) {
+      candidates.push_back(probe / relativeAtlas);
+      if (!probe.has_parent_path()) {
+        break;
+      }
+      const std::filesystem::path parent = probe.parent_path();
+      if (parent == probe) {
+        break;
+      }
+      probe = parent;
+    }
+  }
+
+  for (const auto &candidate : candidates) {
+    if (std::filesystem::exists(candidate)) {
+      return candidate;
+    }
+  }
+  return relativeAtlas;
+}
+
+std::string ResolveAnatomyAtlasPath(const Options &options) {
+  if (!options.anatomyAtlasPath.empty()) {
+    return options.anatomyAtlasPath;
+  }
+  return ResolveDefaultAnatomyAtlasPath().string();
+}
+
+std::string ResolveAnatomyReportPath(const Options &options) {
+  if (!options.anatomyReportPath.empty()) {
+    return options.anatomyReportPath;
+  }
+
+  std::filesystem::path reportPath(options.outputDir);
+  std::string fileName = "anatomy_report";
+  if (!options.id.empty()) {
+    fileName += "_" + options.id;
+  }
+  fileName += ".csv";
+  reportPath /= fileName;
+  return reportPath.string();
+}
 
 void PrintHelp() {
   std::cout
@@ -86,7 +141,10 @@ void PrintHelp() {
       << "                          Actual count = nx*ny*nz from best cube-like factorization.\n"
       << "  --anatomy-hierarchy     Write nested anatomical surface groups instead of flat blocks\n"
       << "  --anatomy-config PATH    Optional YAML anatomy rule/alias overlay\n"
-      << "  --anatomy-report PATH    Write a CSV anatomy classification report\n"
+      << "  --anatomy-report [PATH]  Write a CSV anatomy classification report\n"
+      << "  --anatomy-overrides PATH Apply an edited anatomy_report.csv as batch corrections\n"
+      << "  --anatomy-atlas [PATH]   Apply corrected rows from a reusable atlas CSV and\n"
+      << "                           append new unclassified labels as needs_review rows\n"
       << "  --strict-anatomy         Fail when any surface label is unclassified\n"
       << "  --flat-blocks            Explicitly request legacy flat multiblock output\n"
       << "  --help                    Show this message\n";
@@ -291,11 +349,28 @@ bool ParseArgs(int argc, char **argv, Options &options, std::string &error) {
       }
       options.anatomyConfigPath = argv[++i];
     } else if (arg == "--anatomy-report") {
+      options.anatomyReport = true;
+      if (i + 1 < argc) {
+        const std::string next = argv[i + 1];
+        if (!next.empty() && next[0] != '-') {
+          options.anatomyReportPath = argv[++i];
+        }
+      }
+    } else if (arg == "--anatomy-overrides" ||
+               arg == "--anatomy-report-input") {
       if (i + 1 >= argc) {
-        error = "Missing value for --anatomy-report";
+        error = "Missing value for " + arg;
         return false;
       }
-      options.anatomyReportPath = argv[++i];
+      options.anatomyOverridesPath = argv[++i];
+    } else if (arg == "--anatomy-atlas") {
+      options.anatomyAtlas = true;
+      if (i + 1 < argc) {
+        const std::string next = argv[i + 1];
+        if (!next.empty() && next[0] != '-') {
+          options.anatomyAtlasPath = argv[++i];
+        }
+      }
     } else {
       error = "Unknown argument: " + arg;
       return false;
@@ -1100,10 +1175,20 @@ int main(int argc, char **argv) {
   }
 
   if ((options.strictAnatomy || !options.anatomyConfigPath.empty() ||
-       !options.anatomyReportPath.empty()) &&
+       options.anatomyReport ||
+       !options.anatomyOverridesPath.empty() ||
+       options.anatomyAtlas) &&
       !options.anatomyHierarchy) {
-    std::cerr << "Error: --strict-anatomy, --anatomy-config, and --anatomy-report "
-                 "require --anatomy-hierarchy.\n";
+    std::cerr << "Error: --strict-anatomy, --anatomy-config, --anatomy-report, "
+                 "--anatomy-overrides, and --anatomy-atlas require "
+                 "--anatomy-hierarchy.\n";
+    return 1;
+  }
+
+  if (!options.anatomyOverridesPath.empty() &&
+      options.anatomyAtlas) {
+    std::cerr << "Error: Use --anatomy-atlas as the reusable override source; "
+                 "do not combine it with --anatomy-overrides.\n";
     return 1;
   }
 
@@ -1212,8 +1297,20 @@ int main(int argc, char **argv) {
   }
 
   AnatomyConfig anatomyConfig;
+  AnatomyReportOverrides anatomyOverrides;
   AnatomySummary anatomySummary;
+  size_t anatomyOverrideApplyCount = 0;
+  size_t anatomyAtlasAppendCount = 0;
   std::ofstream anatomyReport;
+  const std::string anatomyReportPath =
+      options.anatomyReport ? ResolveAnatomyReportPath(options) : std::string();
+  std::string anatomyOverrideInputPath = options.anatomyOverridesPath;
+  const std::string anatomyAtlasPath =
+      options.anatomyAtlas ? ResolveAnatomyAtlasPath(options) : std::string();
+  if (anatomyOverrideInputPath.empty() && !anatomyAtlasPath.empty() &&
+      std::filesystem::exists(anatomyAtlasPath)) {
+    anatomyOverrideInputPath = anatomyAtlasPath;
+  }
   if (options.anatomyHierarchy) {
     if (!LoadDefaultOrConfiguredAnatomyConfig(options.anatomyConfigPath,
                                               anatomyConfig,
@@ -1221,8 +1318,16 @@ int main(int argc, char **argv) {
       std::cerr << "Error: " << error << "\n";
       return 1;
     }
-    if (!options.anatomyReportPath.empty()) {
-      const std::filesystem::path reportPath(options.anatomyReportPath);
+    if (!anatomyOverrideInputPath.empty()) {
+      if (!LoadAnatomyReportOverrides(anatomyOverrideInputPath,
+                                      anatomyOverrides,
+                                      error)) {
+        std::cerr << "Error: " << error << "\n";
+        return 1;
+      }
+    }
+    if (!anatomyReportPath.empty()) {
+      const std::filesystem::path reportPath(anatomyReportPath);
       const std::filesystem::path reportParent = reportPath.parent_path();
       if (!reportParent.empty()) {
         std::error_code fsError;
@@ -1299,12 +1404,18 @@ int main(int argc, char **argv) {
     sceneWriteOptions.strictAnatomy = options.strictAnatomy;
     sceneWriteOptions.anatomyConfig =
         sceneWriteOptions.anatomyHierarchy ? &anatomyConfig : nullptr;
+    sceneWriteOptions.anatomyOverrides =
+        sceneWriteOptions.anatomyHierarchy && !anatomyOverrideInputPath.empty()
+            ? &anatomyOverrides
+            : nullptr;
     sceneWriteOptions.anatomyReport =
         sceneWriteOptions.anatomyHierarchy && anatomyReport.is_open()
             ? &anatomyReport
             : nullptr;
     sceneWriteOptions.anatomySummary =
         sceneWriteOptions.anatomyHierarchy ? &anatomySummary : nullptr;
+    sceneWriteOptions.anatomyOverrideApplyCount =
+        sceneWriteOptions.anatomyHierarchy ? &anatomyOverrideApplyCount : nullptr;
 
     if (!VtkSceneWriter::WriteScene(
             frameDir.string(),
@@ -1351,6 +1462,17 @@ int main(int argc, char **argv) {
     return 1;
   }
 
+  if (options.anatomyHierarchy && !anatomyAtlasPath.empty()) {
+    if (!UpdateAnatomyAtlasFile(anatomyAtlasPath,
+                                anatomySummary.unclassifiedClassifications,
+                                options.id,
+                                anatomyAtlasAppendCount,
+                                error)) {
+      std::cerr << "Error: " << error << "\n";
+      return 1;
+    }
+  }
+
   std::cout << "Wrote outputs under: " << baseOutput.string() << "\n";
   if (options.anatomyHierarchy) {
     std::cout << "\nAnatomical hierarchy summary\n";
@@ -1360,6 +1482,26 @@ int main(int argc, char **argv) {
     std::cout << "Unclassified blocks: " << anatomySummary.unclassifiedBlocks << "\n";
     std::cout << "Unique normalized families: "
               << anatomySummary.uniqueNormalizedFamilies.size() << "\n";
+    if (!anatomyOverrideInputPath.empty()) {
+      std::cout << "Anatomy override rows loaded: "
+                << anatomyOverrides.rowCount << "\n";
+      if (anatomyOverrides.skippedRows > 0) {
+        std::cout << "Anatomy override rows skipped: "
+                  << anatomyOverrides.skippedRows << "\n";
+      }
+      std::cout << "Anatomy overrides applied: "
+                << anatomyOverrideApplyCount << "\n";
+    }
+    if (!anatomyReportPath.empty()) {
+      std::cout << "Anatomy report path: "
+                << anatomyReportPath << "\n";
+    }
+    if (!anatomyAtlasPath.empty()) {
+      std::cout << "Anatomy atlas path: "
+                << anatomyAtlasPath << "\n";
+      std::cout << "Anatomy atlas new pending rows: "
+                << anatomyAtlasAppendCount << "\n";
+    }
     for (const auto &entry : anatomySummary.systemCounts) {
       std::cout << entry.first << " blocks: " << entry.second << "\n";
     }

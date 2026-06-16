@@ -390,6 +390,35 @@ rules:
     hierarchy_path: 03_Respiratory/Upper_Airway/Larynx
     secondary_systems: musculoskeletal
     confidence: medium
+  - id: teeth
+    priority: 87
+    pattern: ".*(teeth|tooth).*"
+    canonical_name: teeth
+    system: digestive
+    subsystem: oral_cavity
+    anatomical_region: head_and_neck
+    structure_type: bone
+    hierarchy_path: 04_Digestive/Oral_Cavity
+    confidence: high
+  - id: tongue
+    priority: 87
+    pattern: ".*tongue.*"
+    system: digestive
+    subsystem: oral_cavity
+    anatomical_region: head_and_neck
+    structure_type: organ
+    hierarchy_path: 04_Digestive/Oral_Cavity
+    secondary_systems: musculoskeletal
+    confidence: high
+  - id: oral_cavity
+    priority: 80
+    pattern: ".*(mouth|oral).*"
+    system: digestive
+    subsystem: oral_cavity
+    anatomical_region: head_and_neck
+    structure_type: cavity
+    hierarchy_path: 04_Digestive/Oral_Cavity
+    confidence: medium
   - id: esophagus
     priority: 85
     pattern: ".*(esophagus|oesophagus|pharynx).*"
@@ -489,6 +518,15 @@ rules:
     anatomical_region: pelvis
     structure_type: organ
     hierarchy_path: 05_Urinary/Urinary_Bladder
+    confidence: high
+  - id: urethra
+    priority: 85
+    pattern: ".*urethra.*"
+    system: urinary
+    subsystem: urethra
+    anatomical_region: pelvis
+    structure_type: duct
+    hierarchy_path: 05_Urinary/Urethra
     confidence: high
   - id: male_reproductive
     priority: 80
@@ -749,6 +787,15 @@ rules:
     hierarchy_path: 10_Lymphatic_and_Immune/Spleen
     secondary_systems: digestive
     confidence: high
+  - id: tonsil
+    priority: 85
+    pattern: ".*tonsil.*"
+    system: lymphatic_immune
+    subsystem: tonsils
+    anatomical_region: head_and_neck
+    structure_type: organ
+    hierarchy_path: 10_Lymphatic_and_Immune/Tonsils
+    confidence: medium
   - id: bone_marrow
     priority: 85
     pattern: ".*marrow.*"

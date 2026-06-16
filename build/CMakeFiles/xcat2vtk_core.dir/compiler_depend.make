@@ -3597,6 +3597,7 @@ CMakeFiles/xcat2vtk_core.dir/src/VtkSceneWriter.cpp.o: /Users/aghorban/code/xcat
   /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.5/vtkBuild.h \
   /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.5/vtkCell.h \
   /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.5/vtkCellArray.h \
+  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.5/vtkCellData.h \
   /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.5/vtkCellLinks.h \
   /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.5/vtkCellType.h \
   /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.5/vtkCellTypes.h \
@@ -3618,6 +3619,8 @@ CMakeFiles/xcat2vtk_core.dir/src/VtkSceneWriter.cpp.o: /Users/aghorban/code/xcat
   /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.5/vtkDataObject.h \
   /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.5/vtkDataObjectTree.h \
   /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.5/vtkDataSet.h \
+  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.5/vtkDataSetAttributes.h \
+  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.5/vtkDataSetAttributesFieldList.h \
   /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.5/vtkDebugLeaksManager.h \
   /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.5/vtkDebugRangeIterators.h \
   /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.5/vtkDeprecation.h \

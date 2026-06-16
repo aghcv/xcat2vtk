@@ -7,10 +7,13 @@
 #include <set>
 
 #include <vtkCompositeDataSet.h>
+#include <vtkCellData.h>
 #include <vtkDataObject.h>
+#include <vtkDataSetAttributes.h>
 #include <vtkFieldData.h>
 #include <vtkImageData.h>
 #include <vtkInformation.h>
+#include <vtkIntArray.h>
 #include <vtkMultiBlockDataSet.h>
 #include <vtkPolyData.h>
 #include <vtkStringArray.h>
@@ -31,11 +34,64 @@ void AddStringField(vtkDataObject *object,
   object->GetFieldData()->AddArray(array);
 }
 
+void AddRepeatedStringArray(vtkDataSetAttributes *attributes,
+                            const std::string &name,
+                            const std::string &value,
+                            vtkIdType tupleCount) {
+  if (!attributes) {
+    return;
+  }
+  vtkSmartPointer<vtkStringArray> array = vtkSmartPointer<vtkStringArray>::New();
+  array->SetName(name.c_str());
+  array->SetNumberOfValues(tupleCount);
+  for (vtkIdType i = 0; i < tupleCount; ++i) {
+    array->SetValue(i, value);
+  }
+  attributes->RemoveArray(name.c_str());
+  attributes->AddArray(array);
+}
+
+void AddRepeatedIntArray(vtkDataSetAttributes *attributes,
+                         const std::string &name,
+                         int value,
+                         vtkIdType tupleCount) {
+  if (!attributes) {
+    return;
+  }
+  vtkSmartPointer<vtkIntArray> array = vtkSmartPointer<vtkIntArray>::New();
+  array->SetName(name.c_str());
+  array->SetNumberOfValues(tupleCount);
+  for (vtkIdType i = 0; i < tupleCount; ++i) {
+    array->SetValue(i, value);
+  }
+  attributes->RemoveArray(name.c_str());
+  attributes->AddArray(array);
+}
+
+void AddSurfaceIdentityArrays(vtkDataObject *object,
+                              const AnatomyClassification &classification) {
+  vtkPolyData *polyData = vtkPolyData::SafeDownCast(object);
+  if (!polyData) {
+    return;
+  }
+  vtkCellData *cellData = polyData->GetCellData();
+  const vtkIdType cellCount = polyData->GetNumberOfCells();
+  AddRepeatedStringArray(
+      cellData, "OriginalBlockName", classification.originalName, cellCount);
+  AddRepeatedStringArray(
+      cellData, "NormalizedAnatomyName", classification.normalizedName, cellCount);
+  AddRepeatedStringArray(
+      cellData, "CanonicalAnatomyName", classification.canonicalName, cellCount);
+  AddRepeatedIntArray(
+      cellData, "OriginalBlockIndex", classification.originalBlockIndex, cellCount);
+}
+
 void AddAnatomyMetadata(vtkDataObject *object,
                         const AnatomyClassification &classification) {
   AddStringField(object, "OriginalBlockName", classification.originalName);
   AddStringField(object, "OriginalBlockIndex",
                  std::to_string(classification.originalBlockIndex));
+  AddStringField(object, "NormalizedAnatomyName", classification.normalizedName);
   AddStringField(object, "CanonicalAnatomyName", classification.canonicalName);
   AddStringField(object, "CanonicalAnatomyIdentifier",
                  classification.canonicalIdentifier);
@@ -51,6 +107,7 @@ void AddAnatomyMetadata(vtkDataObject *object,
   AddStringField(object, "HierarchyPath", classification.hierarchyPath);
   AddStringField(object, "SecondarySystems", classification.secondarySystems);
   AddStringField(object, "SourceFile", classification.sourceFile);
+  AddSurfaceIdentityArrays(object, classification);
 }
 
 AnatomyClassification MakeFieldClassification(const std::string &name,
@@ -198,6 +255,14 @@ bool BuildAnatomyClassifications(
         SourceLabelForClassification(surface),
         originalIndex,
         surface.sourceFile);
+    if (options.anatomyOverrides &&
+        ApplyAnatomyReportOverride(*options.anatomyConfig,
+                                   *options.anatomyOverrides,
+                                   classification)) {
+      if (options.anatomyOverrideApplyCount) {
+        ++(*options.anatomyOverrideApplyCount);
+      }
+    }
     classifications.push_back(classification);
     if (classification.unclassified) {
       sawUnclassified = true;

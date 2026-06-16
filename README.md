@@ -261,14 +261,22 @@ Example:
   --output ../vtk_output \
   --dims 750 750 750 \
   --anatomy-hierarchy \
-  --anatomy-report ../vtk_output/anatomy_report.csv
+  --anatomy-report
 ```
 
 Useful options:
 
 - `--anatomy-hierarchy` enables nested anatomical surface blocks.
 - `--anatomy-config PATH` overlays custom aliases and rules.
-- `--anatomy-report PATH` writes one CSV row per source surface block.
+- `--anatomy-report [PATH]` writes one CSV row per source surface block.
+  Without a path, it writes `anatomy_report_<id>.csv` under `--output`, or
+  `anatomy_report.csv` when no `--id` is supplied.
+- `--anatomy-overrides PATH` reads an edited anatomy report CSV and applies
+  batch corrections before writing the hierarchy. `--anatomy-report-input PATH`
+  is accepted as an alias.
+- `--anatomy-atlas [PATH]` reads corrected rows from a reusable override atlas
+  and appends any newly unclassified labels as `needs_review` rows. Without a
+  path, it uses `config/anatomy_atlas.csv`.
 - `--strict-anatomy` fails the run if any surface remains unclassified.
 - `--flat-blocks` explicitly requests the legacy flat multiblock layout.
 
@@ -279,6 +287,7 @@ Each anatomical leaf receives VTK field-data metadata including:
 ```text
 OriginalBlockName
 OriginalBlockIndex
+NormalizedAnatomyName
 CanonicalAnatomyName
 CanonicalAnatomyIdentifier
 AnatomicalSystem
@@ -292,6 +301,67 @@ ClassificationConfidence
 ClassificationRule
 SourceFile
 ```
+
+For surface leaves, `OriginalBlockName`, `NormalizedAnatomyName`,
+`CanonicalAnatomyName`, and numeric `OriginalBlockIndex` are also repeated as
+cell-data arrays so ParaView can expose them in the dataset array/coloring UI
+and spreadsheet views.
+
+The report can also drive batch corrections. A typical review loop is:
+
+```bash
+# First pass: generate the hierarchy and review table.
+./xcat2vtk \
+  --id 260602 \
+  --input ../data \
+  --output ../vtk_output_review \
+  --dims 750 750 750 \
+  --anatomy-hierarchy \
+  --anatomy-report
+
+# Edit/copy rows into corrected_anatomy_report.csv, then apply them.
+./xcat2vtk \
+  --id 260602 \
+  --input ../data \
+  --output ../vtk_output_corrected \
+  --dims 750 750 750 \
+  --anatomy-hierarchy \
+  --anatomy-overrides ../vtk_output_review/corrected_anatomy_report.csv \
+  --anatomy-report
+```
+
+The override CSV may be a full edited `anatomy_report.csv` or a smaller patch
+table. Rows with `original_block_index` and `original_name` apply to that exact
+source surface. Rows with only `original_name` apply to every matching source
+surface label. Editable correction columns include `normalized_name`,
+`canonical_name`, `system`, `subsystem`, `anatomical_region`, `structure_type`,
+`laterality`, `piece_number`, `temporal_phase`, `hierarchy_path`,
+`classification_confidence`, and `classification_rule`. If `hierarchy_path` is
+omitted for a classified row, it is derived from `system` and `subsystem`.
+
+For a longer-running review workflow, keep a single atlas CSV:
+
+```bash
+./xcat2vtk \
+  --id 260602 \
+  --input ../data \
+  --output ../vtk_output_atlas \
+  --dims 750 750 750 \
+  --anatomy-hierarchy \
+  --anatomy-atlas \
+  --anatomy-report
+```
+
+By default the atlas lives at `config/anatomy_atlas.csv`; pass
+`--anatomy-atlas path/to/atlas.csv` only when experimenting with a separate
+review file. The atlas is also an override file. Rows marked
+`review_action=corrected` are applied as batch corrections. Rows marked `needs_review`,
+`needs_manual_review`, `pending`, `unchanged`, or similar are kept for review
+but skipped by the override loader. When a new phantom introduces an
+unclassified label that is not already in the atlas, `--anatomy-atlas` appends a
+generic `original_name` row with example source-file/index evidence. Fill the
+classification columns and change `review_action` to `corrected` to activate it
+for future runs.
 
 Numbered fragments such as `bronchi_17` remain separate datasets. They are
 classified under a shared parent such as
@@ -510,14 +580,13 @@ MIT.
 | Adult female |   0.050 cm | 1380 | 1380 | 3240 |
 | Adult male   |   0.050 cm | 1500 | 1500 | 3520 |
 
-## medium
-| Phantom      | Height | Updated cubic voxel size | X voxels | Y voxels | Z slices |
-| ------------ | -----: | -----------------------: | -------: | -------: | -------: |
-| Infant       |  52 cm |       0.040 cm = 0.40 mm |      554 |      554 |     1300 |
-| 1 year       |  77 cm |       0.050 cm = 0.50 mm |      657 |      657 |     1540 |
-| 5 years      | 110 cm |       0.060 cm = 0.60 mm |      782 |      782 |     1834 |
-| 10 years     | 139 cm |       0.080 cm = 0.80 mm |      741 |      741 |     1738 |
-| 15 years     | 161 cm |       0.090 cm = 0.90 mm |      763 |      763 |     1789 |
-| Adult female | 162 cm |       0.100 cm = 1.00 mm |      690 |      690 |     1620 |
-| Adult male   | 176 cm |       0.100 cm = 1.00 mm |      750 |      750 |     1760 |
-17
+## Medium
+| Phantom      | Height | Updated cubic voxel size | X voxels | Y voxels | Z slices | Z CORREC |
+| ------------ | -----: | -----------------------: | -------: | -------: | -------: | -------: |
+| Infant       |  52 cm |       0.040 cm = 0.40 mm |      554 |      554 |     1300 |     1400 |
+| 1 year       |  77 cm |       0.050 cm = 0.50 mm |      657 |      657 |     1540 |     1640 |
+| 5 years      | 110 cm |       0.060 cm = 0.60 mm |      782 |      782 |     1834 |     1934 |
+| 10 years     | 139 cm |       0.080 cm = 0.80 mm |      741 |      741 |     1738 |     1838 |
+| 15 years     | 161 cm |       0.090 cm = 0.90 mm |      763 |      763 |     1789 |     1889 |
+| Adult female | 162 cm |       0.100 cm = 1.00 mm |      690 |      690 |     1620 |     1720 |
+| Adult male   | 176 cm |       0.100 cm = 1.00 mm |      750 |      750 |     1760 |     1860 |

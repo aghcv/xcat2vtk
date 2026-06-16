@@ -14,8 +14,10 @@ struct VtkSceneWriteOptions {
   bool anatomyHierarchy = false;
   bool strictAnatomy = false;
   const AnatomyConfig *anatomyConfig = nullptr;
+  const AnatomyReportOverrides *anatomyOverrides = nullptr;
   std::ostream *anatomyReport = nullptr;
   AnatomySummary *anatomySummary = nullptr;
+  size_t *anatomyOverrideApplyCount = nullptr;
 };
 
 class VtkSceneWriter {

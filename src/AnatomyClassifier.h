@@ -4,6 +4,8 @@
 #include <map>
 #include <set>
 #include <string>
+#include <tuple>
+#include <utility>
 #include <vector>
 
 struct AnatomyAlias {
@@ -72,8 +74,35 @@ struct AnatomySummary {
   std::set<std::string> uniqueNormalizedFamilies;
   std::map<std::string, size_t> systemCounts;
   std::vector<std::string> unclassifiedLabels;
+  std::vector<AnatomyClassification> unclassifiedClassifications;
 
   void Add(const AnatomyClassification &classification);
+};
+
+struct AnatomyReportOverrideColumns {
+  bool normalizedName = false;
+  bool canonicalName = false;
+  bool system = false;
+  bool subsystem = false;
+  bool anatomicalRegion = false;
+  bool structureType = false;
+  bool laterality = false;
+  bool pieceNumber = false;
+  bool temporalPhase = false;
+  bool hierarchyPath = false;
+  bool confidence = false;
+  bool classificationSource = false;
+  bool sourceFile = false;
+};
+
+struct AnatomyReportOverrides {
+  AnatomyReportOverrideColumns columns;
+  size_t rowCount = 0;
+  size_t skippedRows = 0;
+  std::map<std::tuple<std::string, int, std::string>, AnatomyClassification>
+      bySourceIndexAndName;
+  std::map<std::pair<int, std::string>, AnatomyClassification> byIndexAndName;
+  std::map<std::string, AnatomyClassification> byOriginalName;
 };
 
 class AnatomyClassifier {
@@ -103,6 +132,16 @@ bool LoadDefaultOrConfiguredAnatomyConfig(
     AnatomyConfig &config,
     std::string &error);
 
+bool LoadAnatomyReportOverrides(
+    const std::string &path,
+    AnatomyReportOverrides &overrides,
+    std::string &error);
+
+bool ApplyAnatomyReportOverride(
+    const AnatomyConfig &config,
+    const AnatomyReportOverrides &overrides,
+    AnatomyClassification &classification);
+
 bool ValidateAnatomyConfig(const AnatomyConfig &config, std::string &error);
 
 std::string NormalizeAnatomyLabelText(const std::string &value);
@@ -113,3 +152,10 @@ bool WriteAnatomyReportHeader(std::ostream &out);
 
 bool WriteAnatomyReportRow(std::ostream &out,
                            const AnatomyClassification &classification);
+
+bool UpdateAnatomyAtlasFile(
+    const std::string &path,
+    const std::vector<AnatomyClassification> &unclassifiedClassifications,
+    const std::string &runId,
+    size_t &appendedRows,
+    std::string &error);

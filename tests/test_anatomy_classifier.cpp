@@ -3,17 +3,20 @@
 
 #include <cstdlib>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <set>
 #include <sstream>
 #include <string>
 #include <vector>
 
+#include <vtkCellData.h>
 #include <vtkCellArray.h>
 #include <vtkCompositeDataSet.h>
 #include <vtkDataObject.h>
 #include <vtkFieldData.h>
 #include <vtkInformation.h>
+#include <vtkIntArray.h>
 #include <vtkMultiBlockDataSet.h>
 #include <vtkPoints.h>
 #include <vtkPolyData.h>
@@ -103,6 +106,34 @@ std::string FieldString(vtkDataObject *object, const std::string &name) {
   return strings->GetValue(0);
 }
 
+std::string CellString(vtkDataObject *object, const std::string &name) {
+  vtkPolyData *polyData = vtkPolyData::SafeDownCast(object);
+  if (!polyData) {
+    return std::string();
+  }
+  vtkAbstractArray *array =
+      polyData->GetCellData()->GetAbstractArray(name.c_str());
+  vtkStringArray *strings = vtkStringArray::SafeDownCast(array);
+  if (!strings || strings->GetNumberOfValues() == 0) {
+    return std::string();
+  }
+  return strings->GetValue(0);
+}
+
+int CellInt(vtkDataObject *object, const std::string &name, int fallback = -999) {
+  vtkPolyData *polyData = vtkPolyData::SafeDownCast(object);
+  if (!polyData) {
+    return fallback;
+  }
+  vtkAbstractArray *array =
+      polyData->GetCellData()->GetAbstractArray(name.c_str());
+  vtkIntArray *ints = vtkIntArray::SafeDownCast(array);
+  if (!ints || ints->GetNumberOfValues() == 0) {
+    return fallback;
+  }
+  return ints->GetValue(0);
+}
+
 SurfaceData Surface(const std::string &label) {
   SurfaceData surface;
   surface.label = label;
@@ -110,6 +141,19 @@ SurfaceData Surface(const std::string &label) {
   surface.sourceFile = "synthetic.raw";
   surface.data = MakeTriangle();
   return surface;
+}
+
+std::filesystem::path FindConfigPath() {
+  const std::vector<std::filesystem::path> candidates = {
+      "config/anatomy_hierarchy.yml",
+      "../config/anatomy_hierarchy.yml",
+  };
+  for (const auto &candidate : candidates) {
+    if (std::filesystem::exists(candidate)) {
+      return candidate;
+    }
+  }
+  return candidates.front();
 }
 
 void TestClassificationExamples() {
@@ -136,6 +180,32 @@ void TestClassificationExamples() {
 
   c = classifier.Classify("rkidney");
   Require(c.laterality == "right", "rkidney laterality");
+
+  c = classifier.Classify("teeth");
+  Require(c.system == "digestive", "teeth system");
+  Require(c.subsystem == "oral_cavity", "teeth oral cavity");
+  Require(c.structureType == "bone", "teeth structure type");
+  Require(c.hierarchyPath == "04_Digestive/Oral_Cavity",
+          "teeth hierarchy");
+
+  c = classifier.Classify("tongue");
+  Require(c.system == "digestive", "tongue system");
+  Require(c.subsystem == "oral_cavity", "tongue oral cavity");
+  Require(c.structureType == "organ", "tongue structure type");
+  Require(c.secondarySystems == "musculoskeletal",
+          "tongue secondary system");
+
+  c = classifier.Classify("tonsils");
+  Require(c.system == "lymphatic_immune", "tonsils system");
+  Require(c.subsystem == "tonsils", "tonsils subsystem");
+  Require(c.hierarchyPath == "10_Lymphatic_and_Immune/Tonsils",
+          "tonsils hierarchy");
+
+  c = classifier.Classify("urethra");
+  Require(c.system == "urinary", "urethra system");
+  Require(c.subsystem == "urethra", "urethra subsystem");
+  Require(c.structureType == "duct", "urethra type");
+  Require(c.hierarchyPath == "05_Urinary/Urethra", "urethra hierarchy");
 
   c = classifier.Classify("l_medulla");
   Require(c.laterality == "left", "l_medulla laterality");
@@ -315,6 +385,35 @@ void TestClassificationExamples() {
   Require(c.hierarchyPath == "99_Unclassified", "unknown hierarchy");
 }
 
+void TestConfiguredHierarchyFile() {
+  AnatomyConfig config;
+  std::string error;
+  const std::filesystem::path configPath = FindConfigPath();
+  Require(LoadAnatomyConfigFile(configPath.string(), config, error),
+          "load checked-in anatomy config: " + error);
+  AnatomyClassifier classifier(config);
+
+  AnatomyClassification c = classifier.Classify("teeth");
+  Require(c.system == "digestive", "configured teeth system");
+  Require(c.structureType == "bone", "configured teeth structure type");
+
+  c = classifier.Classify("tongue");
+  Require(c.system == "digestive", "configured tongue system");
+  Require(c.subsystem == "oral_cavity", "configured tongue oral cavity");
+  Require(c.secondarySystems == "musculoskeletal",
+          "configured tongue secondary system");
+
+  c = classifier.Classify("tonsils");
+  Require(c.system == "lymphatic_immune", "configured tonsils system");
+  Require(c.hierarchyPath == "10_Lymphatic_and_Immune/Tonsils",
+          "configured tonsils hierarchy");
+
+  c = classifier.Classify("urethra");
+  Require(c.system == "urinary", "configured urethra system");
+  Require(c.hierarchyPath == "05_Urinary/Urethra",
+          "configured urethra hierarchy");
+}
+
 void TestConfigPriorityAndReport() {
   AnatomyConfig config = DefaultAnatomyConfig();
   AnatomyClassifier classifier(config);
@@ -384,8 +483,28 @@ void TestHierarchicalWriter() {
   Require(pulmonary != nullptr, "pulmonary artery path exists");
   Require(FieldString(pulmonary, "OriginalBlockName") == "l_pulmonary_artery",
           "pulmonary metadata original name");
+  Require(FieldString(pulmonary, "NormalizedAnatomyName") == "pulmonary_artery",
+          "pulmonary metadata normalized name");
   Require(FieldString(pulmonary, "AnatomicalSystem") == "cardiovascular",
           "pulmonary metadata system");
+  Require(CellString(pulmonary, "OriginalBlockName") == "l_pulmonary_artery",
+          "pulmonary cell data original name");
+  Require(CellString(pulmonary, "NormalizedAnatomyName") == "pulmonary_artery",
+          "pulmonary cell data normalized name");
+  Require(CellString(pulmonary, "CanonicalAnatomyName") == "pulmonary_artery",
+          "pulmonary cell data canonical name");
+  Require(CellInt(pulmonary, "OriginalBlockIndex") == 0,
+          "pulmonary cell data original index");
+
+  vtkPolyData *pulmonaryPolyData = vtkPolyData::SafeDownCast(pulmonary);
+  Require(pulmonaryPolyData != nullptr, "pulmonary leaf is polydata");
+  vtkAbstractArray *canonicalNameCells =
+      pulmonaryPolyData->GetCellData()->GetAbstractArray("CanonicalAnatomyName");
+  Require(canonicalNameCells != nullptr,
+          "pulmonary canonical name cell array exists");
+  Require(canonicalNameCells->GetNumberOfValues() ==
+              pulmonaryPolyData->GetNumberOfCells(),
+          "pulmonary canonical name covers every cell");
 
   vtkDataObject *bronchus = FindPath(root,
                                      {"03_Respiratory",
@@ -426,12 +545,154 @@ void TestHierarchicalWriter() {
 
   std::filesystem::remove_all(dir);
 }
+
+void TestAnatomyReportOverrides() {
+  const std::filesystem::path dir =
+      std::filesystem::temp_directory_path() / "xcat2vtk_anatomy_override_test";
+  std::filesystem::remove_all(dir);
+  std::filesystem::create_directories(dir);
+
+  const std::filesystem::path overridePath = dir / "corrected_report.csv";
+  {
+    std::ofstream out(overridePath);
+    out << "original_block_index,original_name,normalized_name,canonical_name,"
+           "system,subsystem,anatomical_region,structure_type,laterality,"
+           "piece_number,temporal_phase,hierarchy_path,"
+           "classification_confidence,classification_rule,source_file,"
+           "review_action\n";
+    out << "0,unknown_structure_xyz,liver,liver,digestive,liver,abdomen,"
+           "organ,unspecified,,static,04_Digestive/Liver,manual,"
+           "ai_review,synthetic.raw,corrected\n";
+    out << ",pending_unknown,pending_unknown,pending_unknown,unclassified,"
+           "unclassified,unspecified,other,unspecified,,static,"
+           "99_Unclassified,unclassified,unclassified,,needs_review\n";
+  }
+
+  AnatomyConfig config = DefaultAnatomyConfig();
+  AnatomyReportOverrides overrides;
+  std::string error;
+  Require(LoadAnatomyReportOverrides(overridePath.string(), overrides, error),
+          "load anatomy report overrides: " + error);
+  Require(overrides.rowCount == 1, "override row count");
+  Require(overrides.skippedRows == 1, "pending override skip count");
+  Require(overrides.bySourceIndexAndName.size() == 1,
+          "source-specific override count");
+  Require(overrides.byIndexAndName.size() == 1, "exact override count");
+
+  AnatomyClassifier classifier(config);
+  AnatomyClassification corrected =
+      classifier.Classify("unknown_structure_xyz", 0, "synthetic.raw");
+  Require(corrected.unclassified, "unknown starts unclassified");
+  Require(ApplyAnatomyReportOverride(config, overrides, corrected),
+          "apply exact anatomy override");
+  Require(!corrected.unclassified, "override classifies unknown");
+  Require(corrected.canonicalName == "liver", "override canonical name");
+  Require(corrected.hierarchyPath == "04_Digestive/Liver",
+          "override hierarchy path");
+  Require(corrected.classificationSource == "report_override:ai_review",
+          "override source records report");
+
+  std::vector<SurfaceData> surfaces = {
+      Surface("unknown_structure_xyz"),
+  };
+  AnatomySummary summary;
+  size_t applied = 0;
+  VtkSceneWriteOptions options;
+  options.anatomyHierarchy = true;
+  options.anatomyConfig = &config;
+  options.anatomyOverrides = &overrides;
+  options.anatomySummary = &summary;
+  options.anatomyOverrideApplyCount = &applied;
+
+  Require(VtkSceneWriter::WriteScene(dir.string(),
+                                     "scene.vtm",
+                                     nullptr,
+                                     nullptr,
+                                     surfaces,
+                                     error,
+                                     options),
+          "write override scene: " + error);
+  Require(applied == 1, "writer applied one override");
+  Require(summary.classifiedBlocks == 1, "override summary classified");
+  Require(summary.unclassifiedBlocks == 0, "override summary unclassified");
+
+  vtkSmartPointer<vtkXMLMultiBlockDataReader> reader =
+      vtkSmartPointer<vtkXMLMultiBlockDataReader>::New();
+  reader->SetFileName((dir / "scene.vtm").string().c_str());
+  reader->Update();
+  vtkMultiBlockDataSet *root =
+      vtkMultiBlockDataSet::SafeDownCast(reader->GetOutput());
+  Require(root != nullptr, "read override scene");
+
+  vtkDataObject *liver =
+      FindPath(root, {"04_Digestive", "Liver", "liver"});
+  Require(liver != nullptr, "override hierarchy path exists");
+  Require(FieldString(liver, "OriginalBlockName") == "unknown_structure_xyz",
+          "override original metadata");
+  Require(FieldString(liver, "CanonicalAnatomyName") == "liver",
+          "override canonical metadata");
+
+  std::filesystem::remove_all(dir);
+}
+
+void TestAnatomyAtlasUpdate() {
+  const std::filesystem::path dir =
+      std::filesystem::temp_directory_path() / "xcat2vtk_anatomy_atlas_test";
+  std::filesystem::remove_all(dir);
+  std::filesystem::create_directories(dir);
+
+  AnatomyConfig config = DefaultAnatomyConfig();
+  AnatomyClassifier classifier(config);
+  AnatomySummary summary;
+  summary.Add(classifier.Classify("new_infant_label", 42, "infant.raw"));
+
+  const std::filesystem::path atlasPath = dir / "anatomy_atlas.csv";
+  size_t appended = 0;
+  std::string error;
+  Require(UpdateAnatomyAtlasFile(atlasPath.string(),
+                                 summary.unclassifiedClassifications,
+                                 "infant_case",
+                                 appended,
+                                 error),
+          "update anatomy atlas: " + error);
+  Require(appended == 1, "atlas appended one pending row");
+
+  AnatomyReportOverrides overrides;
+  Require(LoadAnatomyReportOverrides(atlasPath.string(), overrides, error),
+          "load generated anatomy atlas: " + error);
+  Require(overrides.rowCount == 0, "pending atlas rows are not active overrides");
+  Require(overrides.skippedRows == 1, "pending atlas rows skipped");
+
+  std::ifstream in(atlasPath);
+  std::stringstream buffer;
+  buffer << in.rdbuf();
+  const std::string csv = buffer.str();
+  Require(csv.find("new_infant_label") != std::string::npos,
+          "atlas records pending label");
+  Require(csv.find("needs_review") != std::string::npos,
+          "atlas marks pending label");
+  Require(csv.find("infant.raw") != std::string::npos,
+          "atlas records example source file");
+
+  Require(UpdateAnatomyAtlasFile(atlasPath.string(),
+                                 summary.unclassifiedClassifications,
+                                 "infant_case",
+                                 appended,
+                                 error),
+          "dedupe anatomy atlas: " + error);
+  Require(appended == 0, "atlas does not duplicate pending labels");
+
+  std::filesystem::remove_all(dir);
+}
 } // namespace
 
 int main() {
   TestClassificationExamples();
+  TestConfiguredHierarchyFile();
   TestConfigPriorityAndReport();
   TestHierarchicalWriter();
+  TestAnatomyReportOverrides();
+  TestAnatomyAtlasUpdate();
   std::cout << "anatomy tests passed\n";
   return 0;
 }
