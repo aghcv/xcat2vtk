@@ -218,6 +218,37 @@ Example:
   --spacing 1.0 1.0 1.0
 ```
 
+### Debug One Time Frame
+
+For ID-based auto-discovery runs, use `--frame N` to process only one XCAT
+time step instead of the full sequence. This is useful when debugging anatomy
+hierarchy, atlas, report, or ParaView coloring issues.
+
+```bash
+./xcat2vtk \
+  --id 260602 \
+  --input ../data \
+  --output ../outputs/vtk_output_debug \
+  --dims 750 750 750 \
+  --frame 1 \
+  --anatomy-hierarchy \
+  --anatomy-atlas \
+  --anatomy-report
+```
+
+Use the frame number from the discovered filenames, for example
+`260602_1_head.raw` or `260602_act_1.bin` means `--frame 1`. The output still
+uses the usual `time_001/scene.vtm` folder and a one-frame `.pvd`, so the result
+opens in ParaView like a normal run. If you pass explicit `--surface`,
+`--activity`, or `--attenuation` paths without `--id`, the run is already a
+single-frame conversion.
+
+Keep the anatomy flags in this example when debugging the hierarchy. These are
+opt-in features: `--anatomy-hierarchy` requests the nested anatomical layout,
+`--anatomy-atlas` applies and updates the reusable atlas, and
+`--anatomy-report` writes the review CSV. Only the atlas and report paths are
+defaulted when those flags are present.
+
 By default, surface blocks are stabilized across all discovered time frames before
 the `.vtm` and `.pvd` files are written:
 
@@ -266,17 +297,21 @@ Example:
 
 Useful options:
 
-- `--anatomy-hierarchy` enables nested anatomical surface blocks.
+- `--anatomy-hierarchy` enables nested anatomical surface blocks. Without it,
+  the converter writes the legacy flat block layout.
 - `--anatomy-config PATH` overlays custom aliases and rules.
+- `--frame N` limits ID-based auto-discovery to one time step for debugging.
 - `--anatomy-report [PATH]` writes one CSV row per source surface block.
-  Without a path, it writes `anatomy_report_<id>.csv` under `--output`, or
-  `anatomy_report.csv` when no `--id` is supplied.
+  Reports are not written unless this flag is present. Without a path, it
+  writes `anatomy_report_<id>.csv` under `--output`, or `anatomy_report.csv`
+  when no `--id` is supplied.
 - `--anatomy-overrides PATH` reads an edited anatomy report CSV and applies
   batch corrections before writing the hierarchy. `--anatomy-report-input PATH`
   is accepted as an alias.
 - `--anatomy-atlas [PATH]` reads corrected rows from a reusable override atlas
-  and appends any newly unclassified labels as `needs_review` rows. Without a
-  path, it uses `config/anatomy_atlas.csv`.
+  and appends any newly unclassified labels as `needs_review` rows. The atlas is
+  not used or updated unless this flag is present. Without a path, it uses
+  `config/anatomy_atlas.csv`.
 - `--strict-anatomy` fails the run if any surface remains unclassified.
 - `--flat-blocks` explicitly requests the legacy flat multiblock layout.
 
@@ -569,7 +604,7 @@ MIT.
 
 ## voxel sizing 
 
-## Fine
+## High
 | Phantom      | Voxel size |    X |    Y |    Z |
 | ------------ | ---------: | ---: | ---: | ---: |
 | Infant       |   0.020 cm | 1108 | 1108 | 2600 |
@@ -590,3 +625,14 @@ MIT.
 | 15 years     | 161 cm |       0.090 cm = 0.90 mm |      763 |      763 |     1789 |     1889 |
 | Adult female | 162 cm |       0.100 cm = 1.00 mm |      690 |      690 |     1620 |     1720 |
 | Adult male   | 176 cm |       0.100 cm = 1.00 mm |      750 |      750 |     1760 |     1860 |
+
+## Low
+| Phantom      | Height | Updated cubic voxel size | X voxels | Y voxels | Z slices | Z CORREC |
+| ------------ | -----: | -----------------------: | -------: | -------: | -------: | -------: |
+| Infant       |  52 cm |       0.080 cm = 0.80 mm |      ??? |      ??? |      650 |      700 |
+| 1 year       |  77 cm |       0.100 cm = 1.00 mm |      ??? |      ??? |      770 |      820 |
+| 5 years      | 110 cm |       0.120 cm = 1.20 mm |      ??? |      ??? |      917 |      967 |
+| 10 years     | 139 cm |       0.160 cm = 1.60 mm |      ??? |      ??? |      869 |      919 |
+| 15 years     | 161 cm |       0.180 cm = 1.80 mm |      ??? |      ??? |      ??? |      ??? |
+| Adult female | 162 cm |       0.200 cm = 2.00 mm |      345 |      345 |      810 |      860 |
+| Adult male   | 176 cm |       0.200 cm = 2.00 mm |      375 |      375 |      880 |      930 |
