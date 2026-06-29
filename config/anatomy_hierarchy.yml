@@ -123,7 +123,7 @@ rules:
     subsystem: dynamic_cardiac_components
     anatomical_region: thorax
     structure_type: other
-    hierarchy_path: 01_Cardiovascular/Heart_and_Pericardium
+    hierarchy_path: 01_Cardiovascular/Heart
     confidence: medium
   - id: coronary_vein
     priority: 95
@@ -134,14 +134,164 @@ rules:
     structure_type: vein
     hierarchy_path: 01_Cardiovascular/Coronary_Circulation/Coronary_Veins
     confidence: high
+  - id: diastole_pericardium
+    priority: 95
+    pattern: ".*\\b(?:dias|diastole)_pericardium\\b.*"
+    canonical_name: pericardium
+    system: cardiovascular
+    subsystem: heart/pericardium
+    anatomical_region: thorax
+    structure_type: heart
+    hierarchy_path: 01_Cardiovascular/Heart/Pericardium
+    confidence: high
+  - id: diastole_aorta
+    priority: 95
+    pattern: ".*\\b(?:dias|diastole)_aorta\\b.*"
+    canonical_name: aorta
+    system: cardiovascular
+    subsystem: heart/aorta
+    anatomical_region: thorax
+    structure_type: artery
+    hierarchy_path: 01_Cardiovascular/Heart/Aorta
+    confidence: high
+  - id: diastole_inferior_vena_cava
+    priority: 95
+    pattern: ".*\\b(?:dias|diastole)_inf_vc\\b.*"
+    canonical_name: inferior_vena_cava
+    system: cardiovascular
+    subsystem: heart/inferior_vena_cava
+    anatomical_region: thorax
+    structure_type: vein
+    hierarchy_path: 01_Cardiovascular/Heart/Inferior_Vena_Cava
+    confidence: high
+  - id: diastole_superior_vena_cava
+    priority: 95
+    pattern: ".*\\b(?:dias|diastole)_sup_vc\\b.*"
+    canonical_name: superior_vena_cava
+    system: cardiovascular
+    subsystem: heart/superior_vena_cava
+    anatomical_region: thorax
+    structure_type: vein
+    hierarchy_path: 01_Cardiovascular/Heart/Superior_Vena_Cava
+    confidence: high
+  - id: diastole_left_atrium_myocardium
+    priority: 95
+    pattern: ".*\\b(?:dias|diastole)_lam\\b.*"
+    canonical_name: left_atrium_myocardium
+    system: cardiovascular
+    subsystem: heart/left_atrium
+    anatomical_region: thorax
+    structure_type: heart
+    hierarchy_path: 01_Cardiovascular/Heart/Left_Atrium
+    confidence: high
+  - id: diastole_left_atrium
+    priority: 95
+    pattern: ".*\\b(?:dias_la|dias_left_atrium|diastole_left_atrium)\\b.*"
+    canonical_name: left_atrium
+    system: cardiovascular
+    subsystem: heart/left_atrium
+    anatomical_region: thorax
+    structure_type: heart
+    hierarchy_path: 01_Cardiovascular/Heart/Left_Atrium
+    confidence: high
+  - id: dias_left_atrium
+    priority: 95
+    pattern: ".*\\b(?:dias_la|dias_left_atrium)\\b.*"
+    canonical_name: left_atrium
+    system: cardiovascular
+    subsystem: heart/left_atrium
+    anatomical_region: thorax
+    structure_type: heart
+    hierarchy_path: 01_Cardiovascular/Heart/Left_Atrium
+    confidence: high
+  - id: diastole_left_ventricle_fragments
+    priority: 95
+    pattern: ".*\\b(?:diastole_left_ventricle_00[0-4]|dias_lv_[0-4])\\b.*"
+    canonical_name: left_ventricle
+    system: cardiovascular
+    subsystem: heart/left_ventricle
+    anatomical_region: thorax
+    structure_type: heart
+    hierarchy_path: 01_Cardiovascular/Heart/Left_Ventricle
+    confidence: high
+  - id: diastole_left_ventricle_papillary_muscles_lower
+    priority: 95
+    pattern: ".*\\b(?:diastole_lpap_00[12]|dias_lpap[12])\\b.*"
+    canonical_name: left_papillary_muscle_lower
+    system: cardiovascular
+    subsystem: heart/left_ventricle
+    anatomical_region: thorax
+    structure_type: heart
+    hierarchy_path: 01_Cardiovascular/Heart/Left_Ventricle
+    confidence: high
+  - id: diastole_left_ventricle_papillary_muscle_upper
+    priority: 95
+    pattern: ".*\\b(?:dias_upap|diastole_upap)\\b.*"
+    canonical_name: left_papillary_muscle_upper
+    system: cardiovascular
+    subsystem: heart/left_ventricle
+    anatomical_region: thorax
+    structure_type: heart
+    hierarchy_path: 01_Cardiovascular/Heart/Left_Ventricle
+    confidence: high
+  - id: diastole_pulmonary_artery
+    priority: 95
+    pattern: ".*\\b(?:dias_pul_art|diastole_pul_art)\\b.*"
+    canonical_name: pulmonary_artery
+    system: cardiovascular
+    subsystem: heart/pulmonary_artery
+    anatomical_region: thorax
+    structure_type: artery
+    hierarchy_path: 01_Cardiovascular/Heart/Pulmonary_Artery
+    confidence: high
+  - id: diastole_right_atrium_myocardium
+    priority: 95
+    pattern: ".*\\b(?:dias_ram|diastole_ram)\\b.*"
+    canonical_name: right_atrium_myocardium
+    system: cardiovascular
+    subsystem: heart/right_atrium
+    anatomical_region: thorax
+    structure_type: heart
+    hierarchy_path: 01_Cardiovascular/Heart/Right_Atrium
+    confidence: high
+  - id: dias_right_atrium
+    priority: 95
+    pattern: ".*\\b(?:dias_ra|dias_right_atrium)\\b.*"
+    canonical_name: right_atrium
+    system: cardiovascular
+    subsystem: heart/right_atrium
+    anatomical_region: thorax
+    structure_type: heart
+    hierarchy_path: 01_Cardiovascular/Heart/Right_Atrium
+    confidence: high
+  - id: dias_right_ventricle
+    priority: 95
+    pattern: ".*\\bdias_rv\\b.*"
+    canonical_name: right_ventricle
+    system: cardiovascular
+    subsystem: heart/right_ventricle
+    anatomical_region: thorax
+    structure_type: heart
+    hierarchy_path: 01_Cardiovascular/Heart/Right_Ventricle
+    confidence: high
+  - id: diastole_right_ventricle_myocardium
+    priority: 95
+    pattern: ".*\\b(?:dias_rvm|diastole_rvm)\\b.*"
+    canonical_name: right_ventricle_myocardium
+    system: cardiovascular
+    subsystem: heart/right_ventricle
+    anatomical_region: thorax
+    structure_type: heart
+    hierarchy_path: 01_Cardiovascular/Heart/Right_Ventricle
+    confidence: high
   - id: heart
     priority: 90
     pattern: ".*(heart|atrium|ventricle|myocard|pericard|left_ventricle|right_ventricle|left_atrium|right_atrium).*"
     system: cardiovascular
-    subsystem: heart_and_pericardium
+    subsystem: heart
     anatomical_region: thorax
     structure_type: heart
-    hierarchy_path: 01_Cardiovascular/Heart_and_Pericardium
+    hierarchy_path: 01_Cardiovascular/Heart
     confidence: high
   - id: great_vessels
     priority: 88
