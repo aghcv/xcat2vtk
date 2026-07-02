@@ -79,7 +79,8 @@ Example:
 260602_1_l_kidney.raw
 ```
 
-The tool should eventually also support `.raw` surface files that contain multiple labeled sections internally, for example:
+The tool can also read `.raw` surface files that contain multiple labeled
+sections internally, for example:
 
 ```text
 head
@@ -101,13 +102,23 @@ x1 y1 z1 x2 y2 z2 x3 y3 z3
 | One full time frame | `.vtm` | `vtkMultiBlockDataSet` |
 | Full 4D sequence | `.pvd` | ParaView time-series collection |
 
-## Planned Versions
+## Current Capabilities
 
-### Version 0.1 — Single-frame conversion
+The converter currently focuses on the ParaView workflow needed for XCAT
+phantom review and downstream analysis:
 
-Convert time frames into VTK multiblock scenes. You can either pass explicit paths or use auto-discovery with `--id` and `--input`. Auto-discovery includes all surface `.raw` files for the frame, and each `.raw` can contain multiple labeled sections. Output is written as per-frame folders plus a `.pvd` time-series file.
+- Convert activity and attenuation `.bin` volumes to `.vti`
+- Convert labeled `.raw` triangle surfaces to `.vtp`
+- Read surface files that contain one or many labeled sections
+- Discover case files automatically with `--id` and `--input`
+- Process one frame or multiple time frames
+- Write one `.vtm` scene per time frame plus a `.pvd` time-series file
+- Write `manifest.json` metadata for reproducibility
+- Keep surface block ordering stable across time frames
+- Optionally write nested anatomical hierarchy, atlas, and review reports
+- Optionally export smaller `.vti` sample blocks for student projects
 
-Example:
+Common ID-based run:
 
 ```bash
 xcat2vtk \
@@ -119,68 +130,20 @@ xcat2vtk \
   --origin 0.0 0.0 0.0
 ```
 
-Main goal:
-
-- Prove that `.bin` volumes can be converted to `.vti`
-- Prove that `.raw` triangle surfaces can be converted to `.vtp`
-- Prove that volumes and surfaces can be grouped into one `.vtm`
-
-### Version 0.2 — ID-based automatic scanner
-
-Automatically find all files beginning with a case ID.
-
-Example:
+Use `--dry-run` to preview discovered files before writing VTK output:
 
 ```bash
 xcat2vtk \
   --id 260602 \
   --input ./xcat_output \
   --output ./vtk_output \
-  --dims 750 750 750
+  --dims 750 750 750 \
+  --dry-run
 ```
 
-Main goal:
-
-- Scan an input folder
-- Detect activity, attenuation, and surface files
-- Group files by time frame
-- Support `--dry-run`
-
-### Version 0.3 — 4D time-series export
-
-Create one `.vtm` scene per time frame and a global `.pvd` file.
-
-Main goal:
-
-- Enable ParaView time-slider visualization
-- Write organized output folders
-- Support multiple time frames
-
-### Version 0.4 — Metadata, labels, and manifest
-
-Add metadata for reproducibility and better ParaView organization.
-
-Main goal:
-
-- Write `manifest.json`
-- Attach names to multiblock entries
-- Preserve tissue labels
-- Add scalar names: `activity`, `attenuation`
-- Add optional label map support
-
-### Version 0.5 — Performance and packaging
-
-Improve large-dataset performance and prepare binary distribution.
-
-Main goal:
-
-- Add compression options
-- Add surface point deduplication
-- Add better error handling
-- Add tests
-- Add GitHub Actions CI
-- Add install/package instructions
-- Prepare Linux/macOS binaries or container support
+Possible future work may include additional packaging, distribution, storage, or
+performance improvements, but the main documented workflow is the VTK export
+path described above.
 
 ## Build Requirements
 
@@ -435,11 +398,11 @@ python3 scripts/validate_anatomy_hierarchy.py \
   ../vtk_output/260602/time_001/scene.vtm
 ```
 
-## Development Philosophy
+## Development Notes
 
-This project should develop incrementally.
+This project should stay incremental and easy to verify.
 
-Each version should:
+Changes should:
 
 1. Build successfully.
 2. Include a small test dataset or synthetic test.
