@@ -839,44 +839,44 @@ CMakeFiles/xcat2vtk.dir/src/main.cpp.o: \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/set \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/sstream \
   /Users/aghorban/code/xcat2vtk/src/BinVolumeReader.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkImageData.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkCartesianGrid.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkCommonDataModelModule.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkABINamespace.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkDataSet.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkDataObject.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkObject.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkCommonCoreModule.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkObjectBase.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkDeprecation.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkVersionQuick.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkFeatures.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkIndent.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkSystemIncludes.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkWin32Header.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkABI.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkOptions.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkBuild.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkPlatform.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkIOStream.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkType.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkCompiler.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtk_kwiml.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkkwiml/abi.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkkwiml/int.h \
+  /opt/homebrew/include/vtk-9.6/vtkImageData.h \
+  /opt/homebrew/include/vtk-9.6/vtkCartesianGrid.h \
+  /opt/homebrew/include/vtk-9.6/vtkCommonDataModelModule.h \
+  /opt/homebrew/include/vtk-9.6/vtkABINamespace.h \
+  /opt/homebrew/include/vtk-9.6/vtkDataSet.h \
+  /opt/homebrew/include/vtk-9.6/vtkDataObject.h \
+  /opt/homebrew/include/vtk-9.6/vtkObject.h \
+  /opt/homebrew/include/vtk-9.6/vtkCommonCoreModule.h \
+  /opt/homebrew/include/vtk-9.6/vtkObjectBase.h \
+  /opt/homebrew/include/vtk-9.6/vtkDeprecation.h \
+  /opt/homebrew/include/vtk-9.6/vtkVersionQuick.h \
+  /opt/homebrew/include/vtk-9.6/vtkFeatures.h \
+  /opt/homebrew/include/vtk-9.6/vtkIndent.h \
+  /opt/homebrew/include/vtk-9.6/vtkSystemIncludes.h \
+  /opt/homebrew/include/vtk-9.6/vtkWin32Header.h \
+  /opt/homebrew/include/vtk-9.6/vtkABI.h \
+  /opt/homebrew/include/vtk-9.6/vtkOptions.h \
+  /opt/homebrew/include/vtk-9.6/vtkBuild.h \
+  /opt/homebrew/include/vtk-9.6/vtkPlatform.h \
+  /opt/homebrew/include/vtk-9.6/vtkIOStream.h \
+  /opt/homebrew/include/vtk-9.6/vtkType.h \
+  /opt/homebrew/include/vtk-9.6/vtkCompiler.h \
+  /opt/homebrew/include/vtk-9.6/vtk_kwiml.h \
+  /opt/homebrew/include/vtk-9.6/vtkkwiml/abi.h \
+  /opt/homebrew/include/vtk-9.6/vtkkwiml/int.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/inttypes.h \
   /Library/Developer/CommandLineTools/usr/lib/clang/21/include/inttypes.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/inttypes.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/_inttypes.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/xlocale/_inttypes.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkWrappingHints.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkOStreamWrapper.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkOStrStreamWrapper.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkSetGet.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtksys/SystemTools.hxx \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtksys/Configure.hxx \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtksys/Configure.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtksys/Status.hxx \
+  /opt/homebrew/include/vtk-9.6/vtkWrappingHints.h \
+  /opt/homebrew/include/vtk-9.6/vtkOStreamWrapper.h \
+  /opt/homebrew/include/vtk-9.6/vtkOStrStreamWrapper.h \
+  /opt/homebrew/include/vtk-9.6/vtkSetGet.h \
+  /opt/homebrew/include/vtk-9.6/vtksys/SystemTools.hxx \
+  /opt/homebrew/include/vtk-9.6/vtksys/Configure.hxx \
+  /opt/homebrew/include/vtk-9.6/vtksys/Configure.h \
+  /opt/homebrew/include/vtk-9.6/vtksys/Status.hxx \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/sys/stat.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/sys/_types/_s_ifmt.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/sys/_types/_filesec_t.h \
@@ -886,63 +886,63 @@ CMakeFiles/xcat2vtk.dir/src/main.cpp.o: \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/sys/_select.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/sys/_types/_uuid_t.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/gethostuuid.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkTimeStamp.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkWeakPointerBase.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkNew.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkMeta.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkSmartPointer.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkSmartPointerBase.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkStructuredData.h \
+  /opt/homebrew/include/vtk-9.6/vtkTimeStamp.h \
+  /opt/homebrew/include/vtk-9.6/vtkWeakPointerBase.h \
+  /opt/homebrew/include/vtk-9.6/vtkNew.h \
+  /opt/homebrew/include/vtk-9.6/vtkMeta.h \
+  /opt/homebrew/include/vtk-9.6/vtkSmartPointer.h \
+  /opt/homebrew/include/vtk-9.6/vtkSmartPointerBase.h \
+  /opt/homebrew/include/vtk-9.6/vtkStructuredData.h \
   /Users/aghorban/code/xcat2vtk/src/RawSurfaceReader.h \
   /Users/aghorban/code/xcat2vtk/src/SurfaceTypes.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkPolyData.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkPointSet.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkCellTypes.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkCellType.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkCellTypeUtilities.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkIdTypeArray.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkAOSDataArrayTemplate.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkBuffer.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkObjectFactory.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkDebugLeaksManager.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkDataArrayMeta.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkAssume.h \
+  /opt/homebrew/include/vtk-9.6/vtkPolyData.h \
+  /opt/homebrew/include/vtk-9.6/vtkPointSet.h \
+  /opt/homebrew/include/vtk-9.6/vtkCellTypes.h \
+  /opt/homebrew/include/vtk-9.6/vtkCellType.h \
+  /opt/homebrew/include/vtk-9.6/vtkCellTypeUtilities.h \
+  /opt/homebrew/include/vtk-9.6/vtkIdTypeArray.h \
+  /opt/homebrew/include/vtk-9.6/vtkAOSDataArrayTemplate.h \
+  /opt/homebrew/include/vtk-9.6/vtkBuffer.h \
+  /opt/homebrew/include/vtk-9.6/vtkObjectFactory.h \
+  /opt/homebrew/include/vtk-9.6/vtkDebugLeaksManager.h \
+  /opt/homebrew/include/vtk-9.6/vtkDataArrayMeta.h \
+  /opt/homebrew/include/vtk-9.6/vtkAssume.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/cassert \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/assert.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/_assert.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/_static_assert.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkDataArray.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkAbstractArray.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkIdList.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkVariant.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkStdString.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkVariantInlineOperators.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkDebugRangeIterators.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkGenericDataArray.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkGenericDataArrayLookupHelper.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkTypeTraits.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkGenericDataArray.txx \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkMath.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkMathPrivate.hxx \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkMatrixUtilities.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkMathConfigure.h \
+  /opt/homebrew/include/vtk-9.6/vtkDataArray.h \
+  /opt/homebrew/include/vtk-9.6/vtkAbstractArray.h \
+  /opt/homebrew/include/vtk-9.6/vtkIdList.h \
+  /opt/homebrew/include/vtk-9.6/vtkVariant.h \
+  /opt/homebrew/include/vtk-9.6/vtkStdString.h \
+  /opt/homebrew/include/vtk-9.6/vtkVariantInlineOperators.h \
+  /opt/homebrew/include/vtk-9.6/vtkDebugRangeIterators.h \
+  /opt/homebrew/include/vtk-9.6/vtkGenericDataArray.h \
+  /opt/homebrew/include/vtk-9.6/vtkGenericDataArrayLookupHelper.h \
+  /opt/homebrew/include/vtk-9.6/vtkTypeTraits.h \
+  /opt/homebrew/include/vtk-9.6/vtkGenericDataArray.txx \
+  /opt/homebrew/include/vtk-9.6/vtkMath.h \
+  /opt/homebrew/include/vtk-9.6/vtkMathPrivate.hxx \
+  /opt/homebrew/include/vtk-9.6/vtkMatrixUtilities.h \
+  /opt/homebrew/include/vtk-9.6/vtkMathConfigure.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/float.h \
   /Library/Developer/CommandLineTools/usr/lib/clang/21/include/float.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/float.h \
   /Library/Developer/CommandLineTools/usr/lib/clang/21/include/__float_header_macro.h \
   /Library/Developer/CommandLineTools/usr/lib/clang/21/include/__float_float.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkVariantCast.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkUnsignedCharArray.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkGenericCell.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkCell.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkBoundingBox.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkPoints.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkCellArray.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkAbstractCellArray.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkAffineArray.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkAffineImplicitBackend.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkImplicitArray.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkImplicitArrayTraits.h \
+  /opt/homebrew/include/vtk-9.6/vtkVariantCast.h \
+  /opt/homebrew/include/vtk-9.6/vtkUnsignedCharArray.h \
+  /opt/homebrew/include/vtk-9.6/vtkGenericCell.h \
+  /opt/homebrew/include/vtk-9.6/vtkCell.h \
+  /opt/homebrew/include/vtk-9.6/vtkBoundingBox.h \
+  /opt/homebrew/include/vtk-9.6/vtkPoints.h \
+  /opt/homebrew/include/vtk-9.6/vtkCellArray.h \
+  /opt/homebrew/include/vtk-9.6/vtkAbstractCellArray.h \
+  /opt/homebrew/include/vtk-9.6/vtkAffineArray.h \
+  /opt/homebrew/include/vtk-9.6/vtkAffineImplicitBackend.h \
+  /opt/homebrew/include/vtk-9.6/vtkImplicitArray.h \
+  /opt/homebrew/include/vtk-9.6/vtkImplicitArrayTraits.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/numeric \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/__numeric/accumulate.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/__numeric/adjacent_difference.h \
@@ -960,25 +960,25 @@ CMakeFiles/xcat2vtk.dir/src/main.cpp.o: \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/__numeric/transform_reduce.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/execution \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/__type_traits/is_execution_policy.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkImplicitArray.txx \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkLogger.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkDataArrayRange.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkDataArrayTupleRange_AOS.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkDataArrayTupleRange_Generic.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkDataArrayAccessor.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkDataArrayValueRange_AOS.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkDataArrayValueRange_Generic.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkTypeInt32Array.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkIntArray.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkTypeInt64Array.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkLongLongArray.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkTypeList.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkTypeListMacros.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkTypeList.txx \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkCellLinks.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkAbstractCellLinks.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkPolyDataInternals.h \
+  /opt/homebrew/include/vtk-9.6/vtkImplicitArray.txx \
+  /opt/homebrew/include/vtk-9.6/vtkLogger.h \
+  /opt/homebrew/include/vtk-9.6/vtkDataArrayRange.h \
+  /opt/homebrew/include/vtk-9.6/vtkDataArrayTupleRange_AOS.h \
+  /opt/homebrew/include/vtk-9.6/vtkDataArrayTupleRange_Generic.h \
+  /opt/homebrew/include/vtk-9.6/vtkDataArrayAccessor.h \
+  /opt/homebrew/include/vtk-9.6/vtkDataArrayValueRange_AOS.h \
+  /opt/homebrew/include/vtk-9.6/vtkDataArrayValueRange_Generic.h \
+  /opt/homebrew/include/vtk-9.6/vtkTypeInt32Array.h \
+  /opt/homebrew/include/vtk-9.6/vtkIntArray.h \
+  /opt/homebrew/include/vtk-9.6/vtkTypeInt64Array.h \
+  /opt/homebrew/include/vtk-9.6/vtkLongLongArray.h \
+  /opt/homebrew/include/vtk-9.6/vtkTypeList.h \
+  /opt/homebrew/include/vtk-9.6/vtkTypeListMacros.h \
+  /opt/homebrew/include/vtk-9.6/vtkTypeList.txx \
+  /opt/homebrew/include/vtk-9.6/vtkCellLinks.h \
+  /opt/homebrew/include/vtk-9.6/vtkAbstractCellLinks.h \
+  /opt/homebrew/include/vtk-9.6/vtkPolyDataInternals.h \
   /Users/aghorban/code/xcat2vtk/src/VtkSceneWriter.h \
   /Users/aghorban/code/xcat2vtk/src/AnatomyClassifier.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkFieldData.h \
-  /opt/homebrew/Caskroom/miniconda/base/envs/cxxgeom/include/vtk-9.6/vtkStringArray.h
+  /opt/homebrew/include/vtk-9.6/vtkFieldData.h \
+  /opt/homebrew/include/vtk-9.6/vtkStringArray.h
